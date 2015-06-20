@@ -6,17 +6,21 @@ import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.TooManyListenersException;
 
 /**
  * Created by jsalmon on 19/06/15.
  */
 @Component
-public class SerialPortListener implements SerialPortEventListener {
+public class SerialPortManager implements SerialPortEventListener {
 
     SerialPort serialPort;
     /**
@@ -47,7 +51,12 @@ public class SerialPortListener implements SerialPortEventListener {
      */
     private static final int DATA_RATE = 115200;
 
-    @PostConstruct
+    List<CosmicEventListener> listeners = new ArrayList<>();
+
+    public SerialPortManager() {
+        initialize();
+    }
+
     public void initialize() {
         // the next line is for Raspberry Pi and
         // gets us into the while loop and was suggested here was suggested http://www.raspberrypi.org/phpBB3/viewtopic.php?f=81&t=32186
@@ -94,10 +103,19 @@ public class SerialPortListener implements SerialPortEventListener {
         }
     }
 
+    interface CosmicEventListener {
+        public void onEvent(String line);
+    }
+
+    public void addEventListener(CosmicEventListener listener) {
+        listeners.add(listener);
+    }
+
     /**
      * This should be called when you stop using the port.
      * This will prevent port locking on platforms like Linux.
      */
+    @PreDestroy
     public synchronized void close() {
         if (serialPort != null) {
             serialPort.removeEventListener();
@@ -108,12 +126,16 @@ public class SerialPortListener implements SerialPortEventListener {
     /**
      * Handle an event on the serial port. Read the data and print it.
      */
-    public synchronized void serialEvent(SerialPortEvent oEvent) {
-        if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
+    public synchronized void serialEvent(SerialPortEvent event) {
+        if (event.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             try {
                 String inputLine = input.readLine();
-                System.out.println(inputLine);
-            } catch (Exception e) {
+
+                for (CosmicEventListener listener : listeners) {
+                    listener.onEvent(inputLine);
+                }
+
+            } catch (IOException e) {
                 System.err.println(e.toString());
             }
         }
