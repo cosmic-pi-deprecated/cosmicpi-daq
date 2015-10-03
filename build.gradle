@@ -1,8 +1,6 @@
 buildscript {
     repositories {
-        mavenLocal()
         mavenCentral()
-        maven { url "http://artifactory/release" }
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:1.2.4.RELEASE")
@@ -20,9 +18,7 @@ jar {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
-    maven { url "http://artifactory/release" }
 }
 
 sourceCompatibility = 1.8
@@ -30,15 +26,18 @@ targetCompatibility = 1.8
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter:1.2.4.RELEASE")
-    compile("org.usb4java:usb4java-javax:1.2.0")
+    compile("org.springframework.data:spring-data-elasticsearch:1.3.0.RELEASE")
+
     compile("org.rxtx:rxtx:2.1.7")
 
-    compile(group: 'cern.c2mon.c2mon-daq', name: 'c2mon-daq-core', version: '1.5.7', ext: 'pom')
+    compile("com.google.code.gson:gson:2.3.1")
+    compile("org.projectlombok:lombok:1.16.6")
+}
 
-    //compile("cern.c2mon.c2mon-daq:c2mon-daq-core:1.5.7")
-    //compile("cern.c2mon.c2mon-shared:c2mon-shared-common:1.5.7")
+springBoot {
+    layout = 'ZIP'
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.3'
+    gradleVersion = '2.5'
 }

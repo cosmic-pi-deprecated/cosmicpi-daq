@@ -1,91 +1,40 @@
 package org.cosmicpi.daq;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.core.geo.GeoPoint;
+
+import java.sql.Timestamp;
+import java.util.List;
+
 /**
  * Created by jsalmon on 20/06/15.
  */
+@Data
+@AllArgsConstructor
+@Document(indexName = "events")
 public class CosmicEvent {
 
-    private Integer id;
+  private String gps;
+  private GeoPoint geoPoint;
 
-    private GPS gps;
+  @JsonProperty(value = "@timestamp")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern ="yyyy-MM-dd'T'HH:mm:ss.SSSZZ")
+  private Timestamp timestamp;
 
-    private Double timing;
+  private Double timing;
 
-    private Energy energy;
+  private Energy energy;
+  private EnergyChannel channel1;
+  private EnergyChannel channel2;
 
-    private Double altitude;
-
-    private Double humidity;
-
-    private GravitationalOrientation gravitationalOrientation;
-
-    private MagneticOrientation magneticOrientation;
-
-    private Temperature temperature;
-
-    private Double uptime;
-
-    public Energy getEnergy() {
-        return energy;
-    }
-
-    @Override
-    public String toString() {
-        return String.format(
-                "CosmicEvent[id=%d, channel1='%f', channel2='%f']",
-                id, energy.channel1, energy.channel2);
-    }
-
-    class GPS {
-        private Double time;
-
-        private Double latitude;
-
-        private Double longitude;
-
-        private Double quality;
-
-        private Integer numSatellites;
-
-        private Double horizontalAccuracy;
-
-        private Double altitude;
-
-        private Double height;
-
-        private Double dgps;
-
-        private String checksum;
-    }
-
-    class Energy {
-        private Double channel1;
-
-        private Double channel2;
-
-        public Double getChannel1() {
-            return channel1;
-        }
-
-        public Double getChannel2() {
-            return channel2;
-        }
-    }
-
-    class GravitationalOrientation {
-        private Double x;
-        private Double y;
-        private Double z;
-    }
-
-    class MagneticOrientation {
-        private Double x;
-        private Double y;
-        private Double z;
-    }
-
-    class Temperature {
-        private Double value1;
-        private Double value2;
-    }
+  private Double altitude;
+  private Double humidity;
+  private GravitationalOrientation gravitationalOrientation;
+  private MagneticOrientation magneticOrientation;
+  private Temperature temperature;
+  private Double uptime;
 }
