@@ -1,6 +1,8 @@
 #!	/usr/bin/python
 #	coding: utf8
 
+from __future__ import print_function
+
 """
 Talk to the CosmicPi Arduino DUE accross the serial USB link
 This program has the following functions ...
@@ -271,7 +273,7 @@ class Socket_io(object):
 
         except Exception, e:
             msg = "Exception: Can't open Socket: %s" % (e)
-            print "Sending OFF:%s" % msg
+            print ("Sending OFF:%s" % msg)
             udpflg = False
 
     def send_event_pkt(self, pkt, ipaddr, ipport):
@@ -282,7 +284,7 @@ class Socket_io(object):
 
         except Exception, e:
             msg = "Exception: Can't sendto: %s" % (e)
-            print "Sending OFF:%s" % msg
+            print ("Sending OFF:%s" % msg)
             udpflg = False
 
     def close(self):
@@ -321,20 +323,20 @@ def main():
 
     pushflg = False
 
-    print "\n"
-    print "options (Server IP address)     ip   : %s" % ipaddr
-    print "options (Server Port number)    port : %d" % ipport
-    print "options (USB device name)       usb  : %s" % usbdev
-    print "options (Logging directory)     odir : %s" % logdir
-    print "options (Event logging)         log  : %s" % logflg
-    print "options (UDP sending)           udp  : %s" % udpflg
-    print "options (Vibration monitor)     vib  : %s" % vibflg
-    print "options (Weather Station)       wst  : %s" % wstflg
-    print "options (Cosmic Ray Station)    cray : %s" % evtflg
-    print "options (Push notifications)    patk : %s" % patok
-    print "options (Debug Flag)            debug: %s" % debug
+    print ("\n")
+    print ("options (Server IP address)     ip   : %s" % ipaddr)
+    print ("options (Server Port number)    port : %d" % ipport)
+    print ("options (USB device name)       usb  : %s" % usbdev)
+    print ("options (Logging directory)     odir : %s" % logdir)
+    print ("options (Event logging)         log  : %s" % logflg)
+    print ("options (UDP sending)           udp  : %s" % udpflg)
+    print ("options (Vibration monitor)     vib  : %s" % vibflg)
+    print ("options (Weather Station)       wst  : %s" % wstflg)
+    print ("options (Cosmic Ray Station)    cray : %s" % evtflg)
+    print ("options (Push notifications)    patk : %s" % patok)
+    print ("options (Debug Flag)            debug: %s" % debug)
 
-    print "\ncosmic_pi monitor running, hit '>' for commands\n"
+    print ("\ncosmic_pi monitor running, hit '>' for commands\n")
 
     ts = time.strftime("%d-%b-%Y-%H-%M-%S", time.gmtime(time.time()))
     lgf = "%s/cosmicpi-logs/%s.log" % (logdir, ts)
@@ -345,19 +347,19 @@ def main():
         log = open(lgf, "w");
     except Exception, e:
         msg = "Exception: Cant open log file: %s" % (e)
-        print "Fatal: %s" % msg
+        print ("Fatal: %s" % msg)
         sys.exit(1)
 
     if options.debug:
-        print "\n"
-        print "Log file is: %s" % lgf
+        print ("\n")
+        print ("Log file is: %s" % lgf)
 
     try:
         ser = serial.Serial(port=usbdev, baudrate=9600, timeout=60)
         ser.flush()
     except Exception, e:
         msg = "Exception: Cant open USB device: %s" % (e)
-        print "Fatal: %s" % msg
+        print ("Fatal: %s" % msg)
         sys.exit(1)
 
     kbrd = KeyBoard()
@@ -374,7 +376,7 @@ def main():
         while (True):
             if kbrd.test_input():
                 kbrd.echo_on()
-                print "\n"
+                print ("\n")
                 cmd = raw_input(">")
 
                 if cmd.find("q") != -1:
@@ -385,30 +387,30 @@ def main():
                         debug = False
                     else:
                         debug = True
-                    print "Debug:%s\n" % debug
+                    print ("Debug:%s\n" % debug)
 
                 elif cmd.find("v") != -1:
                     if vibflg:
                         vibflg = False
                     else:
                         vibflg = True
-                    print "Vibration:%s\n" % vibflg
+                    print ("Vibration:%s\n" % vibflg)
 
                 elif cmd.find("w") != -1:
                     if wstflg:
                         wstflg = False
                     else:
                         wstflg = True
-                    print "WeatherStation:%s\n" % wstflg
+                    print ("WeatherStation:%s\n" % wstflg)
 
                 elif cmd.find("r") != -1:
                     if len(patok) > 0:
                         if pushflg:
                             pushflg = False
-                            print "Unregister server notifications"
+                            print ("Unregister server notifications")
                         else:
                             pushflg = True
-                            print "Register for server notifications"
+                            print ("Register for server notifications")
 
                         if udpflg:
                             evt.set_pat(patok, pushflg)
@@ -416,12 +418,12 @@ def main():
                             sio.send_event_pkt(pbuf, ipaddr, ipport)
                             sbuf = evt.get_status()
                             sio.send_event_pkt(sbuf, ipaddr, ipport)
-                            print "Sent notification request:%s" % pbuf
+                            print ("Sent notification request:%s" % pbuf)
                         else:
-                            print "UDP sending is OFF, can not register with server"
+                            print ("UDP sending is OFF, can not register with server")
                             pbuf = ""
                     else:
-                        print "Token option is not set"
+                        print ("Token option is not set")
 
                 elif cmd.find("s") != -1:
                     tim = evt.get_tim()
@@ -433,45 +435,45 @@ def main():
                     htu = evt.get_htu()
                     vib = evt.get_vib()
 
-                    print "ARDUINO STATUS"
-                    print "Status........: Upt:%s Frq:%s Qsz:%s Mis:%s" % (
-                    tim["Upt"], tim["Frq"], sts["Qsz"], sts["Mis"])
-                    print "HardwareStatus: Htu:%s Bmp:%s Acl:%s Mag:%s Gps:%s" % (
-                    sts["Htu"], sts["Bmp"], sts["Acl"], sts["Mag"], sts["Gps"])
-                    print "Location......: Lat:%s Lon:%s Alt:%s" % (loc["Lat"], loc["Lon"], loc["Alt"])
-                    print "Accelarometer.: Acx:%s Acy:%s Acz:%s" % (acl["Acx"], acl["Acy"], acl["Acz"])
-                    print "Magnatometer..: Mgx:%s Mgy:%s Mgz:%s" % (mag["Mgx"], mag["Mgy"], mag["Mgz"])
-                    print "Barometer.....: Tmb:%s Prs:%s Alb:%s" % (bmp["Tmb"], bmp["Prs"], bmp["Alb"])
-                    print "Humidity......: Tmh:%s Hum:%s" % (htu["Tmh"], htu["Hum"])
-                    print "Vibration.....: Vax:%s Vcn:%s\n" % (vib["Vax"], vib["Vcn"])
+                    print ("ARDUINO STATUS")
+                    print ("Status........: Upt:%s Frq:%s Qsz:%s Mis:%s" % (
+                        tim["Upt"], tim["Frq"], sts["Qsz"], sts["Mis"]))
+                    print ("HardwareStatus: Htu:%s Bmp:%s Acl:%s Mag:%s Gps:%s" % (
+                        sts["Htu"], sts["Bmp"], sts["Acl"], sts["Mag"], sts["Gps"]))
+                    print ("Location......: Lat:%s Lon:%s Alt:%s" % (loc["Lat"], loc["Lon"], loc["Alt"]))
+                    print ("Accelarometer.: Acx:%s Acy:%s Acz:%s" % (acl["Acx"], acl["Acy"], acl["Acz"]))
+                    print ("Magnatometer..: Mgx:%s Mgy:%s Mgz:%s" % (mag["Mgx"], mag["Mgy"], mag["Mgz"]))
+                    print ("Barometer.....: Tmb:%s Prs:%s Alb:%s" % (bmp["Tmb"], bmp["Prs"], bmp["Alb"]))
+                    print ("Humidity......: Tmh:%s Hum:%s" % (htu["Tmh"], htu["Hum"]))
+                    print ("Vibration.....: Vax:%s Vcn:%s\n" % (vib["Vax"], vib["Vcn"]))
 
-                    print "MONITOR STATUS"
-                    print "USB device....: %s" % (usbdev)
-                    print "Remote........: Ip:%s Port:%s UdpFlag:%s" % (ipaddr, ipport, udpflg)
-                    print "Notifications.: Flag:%s Token:%s" % (pushflg, patok)
-                    print "Vibration.....: Sent:%d Flag:%s" % (vbrts, vibflg)
-                    print "WeatherStation: Flag:%s" % (wstflg)
-                    print "Events........: Sent:%d LogFlag:%s" % (events, logflg)
-                    print "LogFile.......: %s\n" % (lgf)
+                    print ("MONITOR STATUS")
+                    print ("USB device....: %s" % (usbdev))
+                    print ("Remote........: Ip:%s Port:%s UdpFlag:%s" % (ipaddr, ipport, udpflg))
+                    print ("Notifications.: Flag:%s Token:%s" % (pushflg, patok))
+                    print ("Vibration.....: Sent:%d Flag:%s" % (vbrts, vibflg))
+                    print ("WeatherStation: Flag:%s" % (wstflg))
+                    print ("Events........: Sent:%d LogFlag:%s" % (events, logflg))
+                    print ("LogFile.......: %s\n" % (lgf))
 
                 elif cmd.find("h") != -1:
-                    print "MONITOR COMMANDS"
-                    print "   q=quit, s=status, d=toggle_debug, n=toggle_send, l=toggle_log"
-                    print "   v=vibration, w=weather, r=toggle_notifications h=help\n"
-                    print "ARDUINO COMMANDS"
-                    print "   NOOP, Do nothing"
-                    print "   HELP, Display commands"
-                    print "   HTUX, Reset the HTH chip"
-                    print "   HTUD, HTU Temperature-Humidity display rate, <rate>"
-                    print "   BMPD, BMP Temperature-Altitude display rate, <rate>"
-                    print "   LOCD, Location latitude-longitude display rate, <rate>"
-                    print "   TIMD, Timing uptime-frequency-etm display rate, <rate>"
-                    print "   STSD, Status info display rate, <rate>"
-                    print "   EVQT, Event queue dump threshold, <threshold 1..32>"
-                    print "   ACLD, Accelerometer display rate, <rate>"
-                    print "   MAGD, Magomagnatometer display rate, <rate>"
-                    print "   ACLT, Accelerometer event trigger threshold, <threshold 0..127>"
-                    print ""
+                    print ("MONITOR COMMANDS")
+                    print ("   q=quit, s=status, d=toggle_debug, n=toggle_send, l=toggle_log")
+                    print ("   v=vibration, w=weather, r=toggle_notifications h=help\n")
+                    print ("ARDUINO COMMANDS")
+                    print ("   NOOP, Do nothing")
+                    print ("   HELP, Display commands")
+                    print ("   HTUX, Reset the HTH chip")
+                    print ("   HTUD, HTU Temperature-Humidity display rate, <rate>")
+                    print ("   BMPD, BMP Temperature-Altitude display rate, <rate>")
+                    print ("   LOCD, Location latitude-longitude display rate, <rate>")
+                    print ("   TIMD, Timing uptime-frequency-etm display rate, <rate>")
+                    print ("   STSD, Status info display rate, <rate>")
+                    print ("   EVQT, Event queue dump threshold, <threshold 1..32>")
+                    print ("   ACLD, Accelerometer display rate, <rate>")
+                    print ("   MAGD, Magomagnatometer display rate, <rate>")
+                    print ("   ACLT, Accelerometer event trigger threshold, <threshold 0..127>")
+                    print ("")
 
                     if debug:
                         ser.write("HELP")
@@ -481,17 +483,17 @@ def main():
                         udpflg = False
                     else:
                         udpflg = True
-                    print "Send:%s\n" % udpflg
+                    print ("Send:%s\n" % udpflg)
 
                 elif cmd.find("l") != -1:
                     if logflg:
                         logflg = False
                     else:
                         logflg = True
-                    print "Log:%s\n" % logflg
+                    print ("Log:%s\n" % logflg)
 
                 else:
-                    print "Arduino < %s\n" % cmd
+                    print ("Arduino < %s\n" % cmd)
                     ser.write(cmd.upper())
 
                 kbrd.echo_off()
@@ -500,15 +502,16 @@ def main():
 
             rc = ser.readline()
 
+
             if len(rc) == 0:
-                print "Serial input buffer empty"
+                print ("Serial input buffer empty")
                 ser.close()
                 time.sleep(1)
                 ser = serial.Serial(port=usbdev, baudrate=9600, timeout=60)
                 rc = ser.readline()
                 if len(rc) == 0:
                     break
-                print "Serial Reopened OK"
+                print ("Serial Reopened OK")
                 continue
             else:
                 evt.parse(rc)
@@ -524,11 +527,11 @@ def main():
                         acl = evt.get_acl()
                         mag = evt.get_mag()
                         sqn = evt.get_sqn()
-                        print ""
-                        print "Vibration.....: Cnt:%d Vax:%s Vcn:%s " % (vbrts, vib["Vax"], vib["Vcn"])
-                        print "Accelarometer.: Acx:%s Acy:%s Acz:%s" % (acl["Acx"], acl["Acy"], acl["Acz"])
-                        print "Magnatometer..: Mgx:%s Mgy:%s Mgz:%s" % (mag["Mgx"], mag["Mgy"], mag["Mgz"])
-                        print "Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"])
+                        print ("")
+                        print ("Vibration.....: Cnt:%d Vax:%s Vcn:%s " % (vbrts, vib["Vax"], vib["Vcn"]))
+                        print ("Accelarometer.: Acx:%s Acy:%s Acz:%s" % (acl["Acx"], acl["Acy"], acl["Acz"]))
+                        print ("Magnatometer..: Mgx:%s Mgy:%s Mgz:%s" % (mag["Mgx"], mag["Mgy"], mag["Mgz"]))
+                        print ("Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"]))
 
                         if udpflg:
                             sio.send_event_pkt(vbuf, ipaddr, ipport)
@@ -547,10 +550,10 @@ def main():
                         htu = evt.get_htu()
                         loc = evt.get_loc()
                         sqn = evt.get_sqn()
-                        print ""
-                        print "Barometer.....: Tmb:%s Prs:%s Alb:%s" % (bmp["Tmb"], bmp["Prs"], bmp["Alb"])
-                        print "Humidity......: Tmh:%s Hum:%s Alt:%s" % (htu["Tmh"], htu["Hum"], loc["Alt"])
-                        print "Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"])
+                        print ("")
+                        print ("Barometer.....: Tmb:%s Prs:%s Alb:%s" % (bmp["Tmb"], bmp["Prs"], bmp["Alb"]))
+                        print ("Humidity......: Tmh:%s Hum:%s Alt:%s" % (htu["Tmh"], htu["Hum"], loc["Alt"]))
+                        print ("Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"]))
 
                         if udpflg:
                             sio.send_event_pkt(wbuf, ipaddr, ipport)
@@ -567,11 +570,11 @@ def main():
                         evd = evt.get_evt()
                         tim = evt.get_tim()
                         sqn = evt.get_sqn()
-                        print ""
-                        print "Cosmic Event..: Evt:%s Frq:%s Tks:%s Etm:%s" % (
-                        evd["Evt"], evd["Frq"], evd["Tks"], evd["Etm"])
-                        print "Adc[[Ch0][Ch1]: Adc:%s" % (str(evd["Adc"]))
-                        print "Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"])
+                        print ("")
+                        print ("Cosmic Event..: Evt:%s Frq:%s Tks:%s Etm:%s" % (
+                            evd["Evt"], evd["Frq"], evd["Tks"], evd["Etm"]))
+                        print ("Adc[[Ch0][Ch1]: Adc:%s" % (str(evd["Adc"])))
+                        print ("Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"]))
 
                         if udpflg:
                             sio.send_event_pkt(ebuf, ipaddr, ipport)
@@ -591,20 +594,19 @@ def main():
 
     except Exception, e:
         msg = "Exception: main: %s" % (e)
-        print "Fatal: %s" % msg
+        print ("Fatal: %s" % msg)
         traceback.print_exc()
 
 
     finally:
         kbrd.echo_on()
         tim = evt.get_tim()
-        print "\nUp time:%s Quitting ..." % tim["Upt"]
+        print ("\nUp time:%s Quitting ..." % tim["Upt"])
         ser.close()
         log.close()
         sio.close()
         time.sleep(1)
         sys.exit(0)
-
 
 if __name__ == '__main__':
     main()
