@@ -304,6 +304,7 @@ def main():
     parser.add_option("-w", "--ws", help="Weather station", dest="wstflg", default=False, action="store_true")
     parser.add_option("-c", "--cray", help="Cosmic ray sending", dest="evtflg", default=True, action="store_false")
     parser.add_option("-k", "--patk", help="Server push notification token", dest="patok", default="")
+    parser.add_option("-s", "--simulate", help="Generate dummy packets for testing", dest="simulate", default="")
 
     options, args = parser.parse_args()
 
@@ -318,6 +319,7 @@ def main():
     wstflg = options.wstflg
     evtflg = options.evtflg
     patok = options.patok
+    simulate = options.simulate
 
     pushflg = False
 
@@ -333,6 +335,7 @@ def main():
     print "options (Cosmic Ray Station)    cray : %s" % evtflg
     print "options (Push notifications)    patk : %s" % patok
     print "options (Debug Flag)            debug: %s" % debug
+    print "options (Simulate)              simulate: %s" % simulate
 
     print "\ncosmic_pi monitor running, hit '>' for commands\n"
 
@@ -498,7 +501,12 @@ def main():
 
             # Process Arduino data json strings
 
-            rc = ser.readline()
+            if simulate:
+                rc = generate_dummy_packet()
+                time.sleep(1)
+            else:
+                rc = ser.readline()
+
 
             if len(rc) == 0:
                 print "Serial input buffer empty"
@@ -605,6 +613,8 @@ def main():
         time.sleep(1)
         sys.exit(0)
 
+def generate_dummy_packet():
+    return '{"EVT": {"Evt": "0", "Frq": "0", "Tks": "0", "Etm": "0.0", "Adc": "[[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]"}}'
 
 if __name__ == '__main__':
     main()
