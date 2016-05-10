@@ -28,16 +28,12 @@ julian.lewis lewis.julian@gmail.com 7/Apr/2016
 """
 
 import sys
-import socket
-import select
 import serial
 import time
 import traceback
 import os
 import termios
 import fcntl
-import re
-import ast
 import pika
 import json
 from optparse import OptionParser
@@ -121,8 +117,9 @@ class Event(object):
 
     def parse(self, line):  # parse the incomming json strings from arduino
         nstr = line.replace('\n', '')  # Throw away <crtn>, we dont want them
+        nstr = line.replace('\'', '"')
         try:
-            dic = ast.literal_eval(nstr)  # Build a dictionary entry
+            dic = json.loads(nstr)  # Build a dictionary entry
             kys = dic.keys()  # Get key names, the first is the address
             if self.recd.has_key(kys[0]):  # Check we know about records with this key
                 self.recd[kys[0]] = dic[kys[0]]  # and put it in the dictionary at that address
@@ -140,13 +137,6 @@ class Event(object):
             # print e
             # print "BAD:%s" % line
             pass  # Didnt understand, throw it away
-
-    def extract(self, entry):
-        if self.recd.has_key(entry):
-            nstr = "{\'%s\':%s}" % (entry, str(self.recd[entry]))
-            return nstr
-        else:
-            return ""
 
     # build weather, cosmic ray and vibration event strings suitable to be sent over the network to server
     # these strings are self describing json format for easy decoding at the server end
@@ -171,12 +161,14 @@ class Event(object):
                 self.otmb = tmb
                 self.oprs = prs
 
-                self.weather = self.extract("temperature") + \
-                               "*" + self.extract("barometer") + \
-                               "*" + self.extract("location") + \
-                               "*" + self.extract("timing") + \
-                               "*" + self.extract("date") + \
-                               "*" + self.extract("sequence")
+                self.weather = json.dumps({
+                    'temperature': self.recd['temperature'],
+                    'barometer': self.recd['barometer'],
+                    'location': self.recd['location'],
+                    'timing': self.recd['timing'],
+                    'date': self.recd['date'],
+                    'sequence': self.recd['sequence'],
+                })
 
                 return self.weather
 
@@ -185,16 +177,7 @@ class Event(object):
     def get_event(self):
         if self.newevt:
             self.newevt = 0
-            self.evt = self.extract("event") + \
-                       "*" + self.extract("barometer") + \
-                       "*" + self.extract("accelerometer") + \
-                       "*" + self.extract("magnetometer") + \
-                       "*" + self.extract("temperature") + \
-                       "*" + self.extract("status") + \
-                       "*" + self.extract("location") + \
-                       "*" + self.extract("timing") + \
-                       "*" + self.extract("date") + \
-                       "*" + self.extract("sequence")
+            self.evt = json.dumps(self.recd)
             return self.evt
 
         return ""
@@ -202,24 +185,25 @@ class Event(object):
     def get_vibration(self):
         if self.newvib:
             self.newvib = 0
-            self.vib = self.extract("vibration") + \
-                       "*" + self.extract("accelerometer") + \
-                       "*" + self.extract("magnetometer") + \
-                       "*" + self.extract("location") + \
-                       "*" + self.extract("timing") + \
-                       "*" + self.extract("date") + \
-                       "*" + self.extract("sequence")
+            self.vib = json.dumps({
+                'accelerometer': self.recd['accelerometer'],
+                'magnetometer': self.recd['magnetometer'],
+                'location': self.recd['location'],
+                'timing': self.recd['timing'],
+                'date': self.recd['date'],
+                'sequence': self.recd['sequence'],
+            })
             return self.vib
 
         return ""
 
     def get_notification(self):
         if len(self.recd["PAT"]["Pat"]) > 1:
-            return self.extract("PAT")
+            return json.dumps(self.recd["PAT"])
         return ""
 
     def get_status(self):
-        return self.extract("status")
+        return json.dumps(self.recd["status"])
 
     # Here we just return dictionaries
 
