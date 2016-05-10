@@ -38,6 +38,8 @@ import termios
 import fcntl
 import re
 import ast
+import pika
+import json
 from optparse import OptionParser
 
 
@@ -267,39 +269,28 @@ class Event(object):
         self.recd["PAT"]["Ntf"] = flag
 
 
-# Send UDP packets to the remote server
-
 class Socket_io(object):
-    def __init__(self, ipaddr, ipport):
-        try:
-            self.sok = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    """Publish events"""
+    def __init__(self, host, port, username, password):
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port,
+                                                  credentials=pika.PlainCredentials(username, password)))
+        self.channel = self.connection.channel()
+        self.channel.exchange_declare(exchange='events', type='fanout')
 
-        except Exception, e:
-            msg = "Exception: Can't open Socket: %s" % (e)
-            print ("Sending OFF:%s" % msg)
-            udpflg = False
-
-    def send_event_pkt(self, pkt, ipaddr, ipport):
-        try:
-            sent = 0
-            while sent < len(pkt):
-                sent = sent + self.sok.sendto(pkt[sent:], (ipaddr, ipport))
-
-        except Exception, e:
-            msg = "Exception: Can't sendto: %s" % (e)
-            print ("Sending OFF:%s" % msg)
-            udpflg = False
+    def send_event_pkt(self, pkt):
+        self.channel.basic_publish(exchange='events', routing_key='', body=json.dumps(pkt))
 
     def close(self):
-        self.sok.close()
+        self.connection.close()
 
 
 def main():
     use = "Usage: %prog [--ip=cosmicpi.ddns.net --port=4901 --usb=/dev/ttyACM0 --debug --dirnam=/tmp]"
     parser = OptionParser(usage=use, version="cosmic_pi version 1.0")
 
-    parser.add_option("-i", "--ip", help="Server IP address or name", dest="ipaddr", default="localhost")
-    parser.add_option("-p", "--port", help="Server portnumber", dest="ipport", type="int", default="4901")
+    parser.add_option("-i", "--host", help="Message broker host", dest="host", default="localhost")
+    parser.add_option("-p", "--port", help="Message broker port", dest="port", type="int", default="5672")
+    parser.add_option("-x", "--credentials", help="Message broker credentials", dest="credentials", default="test:test")
     parser.add_option("-u", "--usb", help="USB device name", dest="usbdev", default="/dev/ttyACM0")
     parser.add_option("-d", "--debug", help="Debug Option", dest="debug", default=False, action="store_true")
     parser.add_option("-o", "--odir", help="Path to log directory", dest="logdir", default="/tmp")
@@ -312,8 +303,8 @@ def main():
 
     options, args = parser.parse_args()
 
-    ipaddr = options.ipaddr
-    ipport = options.ipport
+    host = options.host
+    port = options.port
     usbdev = options.usbdev
     logdir = options.logdir
     debug = options.debug
@@ -324,11 +315,15 @@ def main():
     evtflg = options.evtflg
     patok = options.patok
 
+    credentials = options.credentials.split(':')
+    username = credentials[0]
+    password = credentials[1]
+
     pushflg = False
 
     print ("\n")
-    print ("options (Server IP address)     ip   : %s" % ipaddr)
-    print ("options (Server Port number)    port : %d" % ipport)
+    print ("options (Server IP address)     ip   : %s" % host)
+    print ("options (Server Port number)    port : %d" % port)
     print ("options (USB device name)       usb  : %s" % usbdev)
     print ("options (Logging directory)     odir : %s" % logdir)
     print ("options (Event logging)         log  : %s" % logflg)
@@ -365,15 +360,15 @@ def main():
         print ("Fatal: %s" % msg)
         sys.exit(1)
 
-    kbrd = KeyBoard()
-    kbrd.echo_off()
-
     evt = Event()
     events = 0
     vbrts = 0
     weathers = 0
 
-    sio = Socket_io(ipaddr, ipport)
+    sio = Socket_io(host, port, username, password)
+
+    kbrd = KeyBoard()
+    kbrd.echo_off()
 
     try:
         while (True):
@@ -418,9 +413,9 @@ def main():
                         if udpflg:
                             evt.set_pat(patok, pushflg)
                             pbuf = evt.get_notification()
-                            sio.send_event_pkt(pbuf, ipaddr, ipport)
+                            sio.send_event_pkt(pbuf)
                             sbuf = evt.get_status()
-                            sio.send_event_pkt(sbuf, ipaddr, ipport)
+                            sio.send_event_pkt(sbuf)
                             print ("Sent notification request:%s" % pbuf)
                         else:
                             print ("UDP sending is OFF, can not register with server")
@@ -444,15 +439,15 @@ def main():
                     print ("HardwareStatus: temp_status:%s baro_status:%s accel_status:%s mag_status:%s gps_status:%s" % (
                         sts["temp_status"], sts["baro_status"], sts["accel_status"], sts["mag_status"], sts["gps_status"]))
                     print ("Location......: latitude:%s longitude:%s altitude:%s" % (loc["latitude"], loc["longitude"], loc["altitude"]))
-                    print ("Accelarometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
-                    print ("magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
+                    print ("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
+                    print ("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
                     print ("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
-                    print ("humidity......: temperature:%s humidity:%s" % (htu["temperature"], htu["humidity"]))
+                    print ("Humidity......: temperature:%s humidity:%s" % (htu["temperature"], htu["humidity"]))
                     print ("Vibration.....: direction:%s count:%s\n" % (vib["direction"], vib["count"]))
 
                     print ("MONITOR STATUS")
                     print ("USB device....: %s" % (usbdev))
-                    print ("Remote........: Ip:%s Port:%s UdpFlag:%s" % (ipaddr, ipport, udpflg))
+                    print ("Remote........: Ip:%s Port:%s UdpFlag:%s" % (host, port, udpflg))
                     print ("Notifications.: Flag:%s Token:%s" % (pushflg, patok))
                     print ("Vibration.....: Sent:%d Flag:%s" % (vbrts, vibflg))
                     print ("WeatherStation: Flag:%s" % (wstflg))
@@ -474,7 +469,7 @@ def main():
                     print ("   STSD, Status info display rate, <rate>")
                     print ("   EVQT, Event queue dump threshold, <threshold 1..32>")
                     print ("   ACLD, Accelerometer display rate, <rate>")
-                    print ("   MAGD, Magomagnatometer display rate, <rate>")
+                    print ("   MAGD, Magnetometer display rate, <rate>")
                     print ("   ACLT, Accelerometer event trigger threshold, <threshold 0..127>")
                     print ("")
 
@@ -537,7 +532,7 @@ def main():
                         print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
-                            sio.send_event_pkt(vbuf, ipaddr, ipport)
+                            sio.send_event_pkt(vbuf)
                         if logflg:
                             log.write(vbuf)
 
@@ -559,7 +554,7 @@ def main():
                         print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
-                            sio.send_event_pkt(wbuf, ipaddr, ipport)
+                            sio.send_event_pkt(wbuf)
                         if logflg:
                             log.write(wbuf)
 
@@ -580,7 +575,7 @@ def main():
                         print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
-                            sio.send_event_pkt(ebuf, ipaddr, ipport)
+                            sio.send_event_pkt(ebuf)
                         if logflg:
                             log.write(ebuf)
 
