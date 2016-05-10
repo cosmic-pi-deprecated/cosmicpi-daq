@@ -138,13 +138,6 @@ class Event(object):
             # print "BAD:%s" % line
             pass  # Didnt understand, throw it away
 
-    def extract(self, entry):
-        if self.recd.has_key(entry):
-            nstr = "{\'%s\':%s}" % (entry, str(self.recd[entry]))
-            return nstr
-        else:
-            return ""
-
     # build weather, cosmic ray and vibration event strings suitable to be sent over the network to server
     # these strings are self describing json format for easy decoding at the server end
 
