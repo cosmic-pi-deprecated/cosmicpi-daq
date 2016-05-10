@@ -78,29 +78,32 @@ class Event(object):
 
         # These are the json strings we are expecting from the arduino
 
-        self.HTU = {"Tmh": "0.0", "Hum": "0.0"}
-        self.BMP = {"Tmb": "0.0", "Prs": "0.0", "Alb": "0.0"}
-        self.VIB = {"Vax": "0", "Vcn": "0"}
-        self.MAG = {"Mgx": "0.0", "Mgy": "0.0", "Mgz": "0.0"}
+        self.temperature = {"temperature": "0.0", "humidity": "0.0"}
+        self.barometer = {"temperature": "0.0", "pressure": "0.0", "altitude": "0.0"}
+        self.vibration = {"direction": "0", "count": "0"}
+        self.magnetometer = {"x": "0.0", "y": "0.0", "z": "0.0"}
         self.MOG = {"Mox": "0.0", "Moy": "0.0", "Moz": "0.0"}
-        self.ACL = {"Acx": "0.0", "Acy": "0.0", "Acz": "0.0"}
+        self.accelerometer = {"x": "0.0", "y": "0.0", "z": "0.0"}
         self.AOL = {"Aox": "0.0", "Aoy": "0.0", "Aoz": "0.0"}
-        self.LOC = {"Lat": "0.0", "Lon": "0.0", "Alt": "0.0"}
-        self.TIM = {"Upt": "0", "Frq": "0", "Sec": "0"}
-        self.STS = {"Qsz": "0", "Mis": "0", "Ter": "0", "Htu": "0", "Bmp": "0", "Acl": "0", "Mag": "0", "Gps": "0"}
-        self.EVT = {"Evt": "0", "Frq": "0", "Tks": "0", "Etm": "0.0", "Adc": "[[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]"}
+        self.location = {"latitude": "0.0", "longitude": "0.0", "altitude": "0.0"}
+        self.timing = {"uptime": "0", "counter_frequency": "0", "time_string": "0"}
+        self.status = {"queue_size": "0", "missed_events": "0", "buffer_error": "0", "temp_status": "0",
+                       "baro_status": "0", "accel_status": "0", "mag_status": "0", "gps_status": "0"}
+        self.event = {"event_number": "0", "counter_frequency": "0", "ticks": "0", "timestamp": "0.0", 
+                      "adc": "[[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]"}
 
         # Add ons
 
-        self.DAT = {"Dat": "s"}  # Date
-        self.SQN = {"Sqn": "0"}  # Sequence number
+        self.date = {"date": "s"}  # Date
+        self.sequence = {"number": "0"}  # Sequence number
         self.PAT = {"Pat": "s", "Ntf": "0"}  # Pushover application token
 
         # Now build the main dictionary with one entry for each json string we will process
 
-        self.recd = {"HTU": self.HTU, "BMP": self.BMP, "VIB": self.VIB, "MAG": self.MAG, "MOG": self.MOG,
-                     "ACL": self.ACL, "AOL": self.AOL, "LOC": self.LOC, "TIM": self.TIM, "STS": self.STS,
-                     "EVT": self.EVT, "DAT": self.DAT, "SQN": self.SQN, "PAT": self.PAT}
+        self.recd = {"temperature": self.temperature, "barometer": self.barometer, "vibration": self.vibration, 
+                     "magnetometer": self.magnetometer, "MOG": self.MOG, "accelerometer": self.accelerometer, 
+                     "AOL": self.AOL, "location": self.location, "timing": self.timing, "status": self.status,
+                     "event": self.event, "date": self.date, "sequence": self.sequence, "PAT": self.PAT}
 
         self.newvib = 0  # Vibration
         self.newevt = 0  # Cosmic ray
@@ -122,13 +125,13 @@ class Event(object):
             if self.recd.has_key(kys[0]):  # Check we know about records with this key
                 self.recd[kys[0]] = dic[kys[0]]  # and put it in the dictionary at that address
 
-            if kys[0] == "VIB":
+            if kys[0] == "vibration":
                 self.newvib = 1
 
-            if kys[0] == "EVT":
+            if kys[0] == "event":
                 self.newevt = 1
 
-            if kys[0] == "HTU":
+            if kys[0] == "temperature":
                 self.newhtu = 1
 
         except Exception, e:
@@ -150,9 +153,9 @@ class Event(object):
         if self.newhtu:
             self.newhtu = 0
             try:
-                hum = float(self.recd["HTU"]["Hum"])
-                tmb = float(self.recd["BMP"]["Tmb"])
-                prs = float(self.recd["BMP"]["Prs"])
+                hum = float(self.recd["temperature"]["humidity"])
+                tmb = float(self.recd["barometer"]["temperature"])
+                prs = float(self.recd["barometer"]["pressure"])
 
             except Exception, e:
                 hum = 0.0
@@ -166,12 +169,12 @@ class Event(object):
                 self.otmb = tmb
                 self.oprs = prs
 
-                self.weather = self.extract("HTU") + \
-                               "*" + self.extract("BMP") + \
-                               "*" + self.extract("LOC") + \
-                               "*" + self.extract("TIM") + \
-                               "*" + self.extract("DAT") + \
-                               "*" + self.extract("SQN")
+                self.weather = self.extract("temperature") + \
+                               "*" + self.extract("barometer") + \
+                               "*" + self.extract("location") + \
+                               "*" + self.extract("timing") + \
+                               "*" + self.extract("date") + \
+                               "*" + self.extract("sequence")
 
                 return self.weather
 
@@ -180,16 +183,16 @@ class Event(object):
     def get_event(self):
         if self.newevt:
             self.newevt = 0
-            self.evt = self.extract("EVT") + \
-                       "*" + self.extract("BMP") + \
-                       "*" + self.extract("ACL") + \
-                       "*" + self.extract("MAG") + \
-                       "*" + self.extract("HTU") + \
-                       "*" + self.extract("STS") + \
-                       "*" + self.extract("LOC") + \
-                       "*" + self.extract("TIM") + \
-                       "*" + self.extract("DAT") + \
-                       "*" + self.extract("SQN")
+            self.evt = self.extract("event") + \
+                       "*" + self.extract("barometer") + \
+                       "*" + self.extract("accelerometer") + \
+                       "*" + self.extract("magnetometer") + \
+                       "*" + self.extract("temperature") + \
+                       "*" + self.extract("status") + \
+                       "*" + self.extract("location") + \
+                       "*" + self.extract("timing") + \
+                       "*" + self.extract("date") + \
+                       "*" + self.extract("sequence")
             return self.evt
 
         return ""
@@ -197,13 +200,13 @@ class Event(object):
     def get_vibration(self):
         if self.newvib:
             self.newvib = 0
-            self.vib = self.extract("VIB") + \
-                       "*" + self.extract("ACL") + \
-                       "*" + self.extract("MAG") + \
-                       "*" + self.extract("LOC") + \
-                       "*" + self.extract("TIM") + \
-                       "*" + self.extract("DAT") + \
-                       "*" + self.extract("SQN")
+            self.vib = self.extract("vibration") + \
+                       "*" + self.extract("accelerometer") + \
+                       "*" + self.extract("magnetometer") + \
+                       "*" + self.extract("location") + \
+                       "*" + self.extract("timing") + \
+                       "*" + self.extract("date") + \
+                       "*" + self.extract("sequence")
             return self.vib
 
         return ""
@@ -214,46 +217,46 @@ class Event(object):
         return ""
 
     def get_status(self):
-        return self.extract("STS")
+        return self.extract("status")
 
     # Here we just return dictionaries
 
     def get_vib(self):
-        return self.recd["VIB"]
+        return self.recd["vibration"]
 
     def get_tim(self):
-        return self.recd["TIM"]
+        return self.recd["timing"]
 
     def get_loc(self):
-        return self.recd["LOC"]
+        return self.recd["location"]
 
     def get_sts(self):
-        return self.recd["STS"]
+        return self.recd["status"]
 
     def get_bmp(self):
-        return self.recd["BMP"]
+        return self.recd["barometer"]
 
     def get_acl(self):
-        return self.recd["ACL"]
+        return self.recd["accelerometer"]
 
     def get_mag(self):
-        return self.recd["MAG"]
+        return self.recd["magnetometer"]
 
     def get_htu(self):
-        return self.recd["HTU"]
+        return self.recd["temperature"]
 
     def get_evt(self):
-        return self.recd["EVT"]
+        return self.recd["event"]
 
     def get_dat(self):
-        self.recd["DAT"]["Dat"] = time.asctime(time.gmtime(time.time()))
-        return self.recd["DAT"]
+        self.recd["date"]["date"] = time.asctime(time.gmtime(time.time()))
+        return self.recd["date"]
 
     def get_sqn(self):
-        return self.recd["SQN"]
+        return self.recd["sequence"]
 
     def nxt_sqn(self):
-        self.recd["SQN"]["Sqn"] = self.sqn
+        self.recd["sequence"]["number"] = self.sqn
         self.sqn = self.sqn + 1
 
     def get_pat(self):
@@ -436,16 +439,16 @@ def main():
                     vib = evt.get_vib()
 
                     print ("ARDUINO STATUS")
-                    print ("Status........: Upt:%s Frq:%s Qsz:%s Mis:%s" % (
-                        tim["Upt"], tim["Frq"], sts["Qsz"], sts["Mis"]))
-                    print ("HardwareStatus: Htu:%s Bmp:%s Acl:%s Mag:%s Gps:%s" % (
-                        sts["Htu"], sts["Bmp"], sts["Acl"], sts["Mag"], sts["Gps"]))
-                    print ("Location......: Lat:%s Lon:%s Alt:%s" % (loc["Lat"], loc["Lon"], loc["Alt"]))
-                    print ("Accelarometer.: Acx:%s Acy:%s Acz:%s" % (acl["Acx"], acl["Acy"], acl["Acz"]))
-                    print ("Magnatometer..: Mgx:%s Mgy:%s Mgz:%s" % (mag["Mgx"], mag["Mgy"], mag["Mgz"]))
-                    print ("Barometer.....: Tmb:%s Prs:%s Alb:%s" % (bmp["Tmb"], bmp["Prs"], bmp["Alb"]))
-                    print ("Humidity......: Tmh:%s Hum:%s" % (htu["Tmh"], htu["Hum"]))
-                    print ("Vibration.....: Vax:%s Vcn:%s\n" % (vib["Vax"], vib["Vcn"]))
+                    print ("Status........: uptime:%s counter_frequency:%s queue_size:%s missed_events:%s" % (
+                        tim["uptime"], tim["counter_frequency"], sts["queue_size"], sts["missed_events"]))
+                    print ("HardwareStatus: temp_status:%s baro_status:%s accel_status:%s mag_status:%s gps_status:%s" % (
+                        sts["temp_status"], sts["baro_status"], sts["accel_status"], sts["mag_status"], sts["gps_status"]))
+                    print ("Location......: latitude:%s longitude:%s altitude:%s" % (loc["latitude"], loc["longitude"], loc["altitude"]))
+                    print ("Accelarometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
+                    print ("magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
+                    print ("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
+                    print ("humidity......: temperature:%s humidity:%s" % (htu["temperature"], htu["humidity"]))
+                    print ("Vibration.....: direction:%s count:%s\n" % (vib["direction"], vib["count"]))
 
                     print ("MONITOR STATUS")
                     print ("USB device....: %s" % (usbdev))
@@ -528,10 +531,10 @@ def main():
                         mag = evt.get_mag()
                         sqn = evt.get_sqn()
                         print ("")
-                        print ("Vibration.....: Cnt:%d Vax:%s Vcn:%s " % (vbrts, vib["Vax"], vib["Vcn"]))
-                        print ("Accelarometer.: Acx:%s Acy:%s Acz:%s" % (acl["Acx"], acl["Acy"], acl["Acz"]))
-                        print ("Magnatometer..: Mgx:%s Mgy:%s Mgz:%s" % (mag["Mgx"], mag["Mgy"], mag["Mgz"]))
-                        print ("Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"]))
+                        print ("Vibration.....: count:%d direction:%s count:%s " % (vbrts, vib["direction"], vib["count"]))
+                        print ("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
+                        print ("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
+                        print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
                             sio.send_event_pkt(vbuf, ipaddr, ipport)
@@ -551,9 +554,9 @@ def main():
                         loc = evt.get_loc()
                         sqn = evt.get_sqn()
                         print ("")
-                        print ("Barometer.....: Tmb:%s Prs:%s Alb:%s" % (bmp["Tmb"], bmp["Prs"], bmp["Alb"]))
-                        print ("Humidity......: Tmh:%s Hum:%s Alt:%s" % (htu["Tmh"], htu["Hum"], loc["Alt"]))
-                        print ("Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"]))
+                        print ("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
+                        print ("humidity......: temperature:%s humidity:%s altitude:%s" % (htu["temperature"], htu["humidity"], loc["altitude"]))
+                        print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
                             sio.send_event_pkt(wbuf, ipaddr, ipport)
@@ -571,10 +574,10 @@ def main():
                         tim = evt.get_tim()
                         sqn = evt.get_sqn()
                         print ("")
-                        print ("Cosmic Event..: Evt:%s Frq:%s Tks:%s Etm:%s" % (
-                            evd["Evt"], evd["Frq"], evd["Tks"], evd["Etm"]))
-                        print ("Adc[[Ch0][Ch1]: Adc:%s" % (str(evd["Adc"])))
-                        print ("Time..........: Upt:%s Sec:%s Sqn:%d\n" % (tim["Upt"], tim["Sec"], sqn["Sqn"]))
+                        print ("Cosmic Event..: event_number:%s counter_frequency:%s ticks:%s timestamp:%s" % (
+                            evd["event_number"], evd["counter_frequency"], evd["ticks"], evd["timestamp"]))
+                        print ("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
+                        print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
                             sio.send_event_pkt(ebuf, ipaddr, ipport)
@@ -586,9 +589,9 @@ def main():
                     sys.stdout.write(rc)
                 else:
                     ts = time.strftime("%d/%b/%Y %H:%M:%S", time.gmtime(time.time()))
-                    tim = evt.get_tim();
-                    sts = evt.get_sts();
-                    s = "cosmic_pi:Upt:%s :Qsz:%s Tim:[%s] %s    \r" % (tim["Upt"], sts["Qsz"], ts, tim["Sec"])
+                    tim = evt.get_tim()
+                    sts = evt.get_sts()
+                    s = "cosmic_pi:uptime:%s :queue_size:%s time_string:[%s] %s    \r" % (tim["uptime"], sts["queue_size"], ts, tim["time_string"])
                     sys.stdout.write(s)
                     sys.stdout.flush()
 
@@ -601,7 +604,7 @@ def main():
     finally:
         kbrd.echo_on()
         tim = evt.get_tim()
-        print ("\nUp time:%s Quitting ..." % tim["Upt"])
+        print ("\nUp time:%s Quitting ..." % tim["uptime"])
         ser.close()
         log.close()
         sio.close()
