@@ -483,7 +483,7 @@ def main():
             # Process Arduino data json strings
 
             rc = ser.readline()
-
+            sio.connection.process_data_events()
 
             if len(rc) == 0:
                 print ("Serial input buffer empty")
