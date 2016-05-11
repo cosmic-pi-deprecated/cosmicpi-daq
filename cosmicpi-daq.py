@@ -87,7 +87,7 @@ class Event(object):
         self.timing = {"uptime": "0", "counter_frequency": "0", "time_string": "0"}
         self.status = {"queue_size": "0", "missed_events": "0", "buffer_error": "0", "temp_status": "0",
                        "baro_status": "0", "accel_status": "0", "mag_status": "0", "gps_status": "0"}
-        self.event = {"event_number": "0", "counter_frequency": "0", "ticks": "0", "timestamp": "0.0", 
+        self.event = {"event_number": "0", "timer_frequency": "0", "ticks": "0", "timestamp": "0.0",
                       "adc": "[[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]"}
 
         # Add ons
@@ -553,8 +553,8 @@ def main():
                         tim = evt.get_tim()
                         sqn = evt.get_sqn()
                         print ("")
-                        print ("Cosmic Event..: event_number:%s counter_frequency:%s ticks:%s timestamp:%s" % (
-                            evd["event_number"], evd["counter_frequency"], evd["ticks"], evd["timestamp"]))
+                        print ("Cosmic Event..: event_number:%s timer_frequency:%s ticks:%s timestamp:%s" % (
+                            evd["event_number"], evd["timer_frequency"], evd["ticks"], evd["timestamp"]))
                         print ("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
                         print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
