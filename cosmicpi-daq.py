@@ -322,10 +322,13 @@ def main():
                         evd = evt.get_evt()
                         tim = evt.get_tim()
                         sqn = evt.get_sqn()
+                        loc = evt.get_loc()
                         print ("")
                         print ("Cosmic Event..: event_number:%s timer_frequency:%s ticks:%s timestamp:%s" % (
                             evd["event_number"], evd["timer_frequency"], evd["ticks"], evd["timestamp"]))
                         print ("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
+                        print ("Location......: latitude:%s longitude:%s altitude:%s" % (
+                            loc["latitude"], loc["longitude"], loc["altitude"]))
                         print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
