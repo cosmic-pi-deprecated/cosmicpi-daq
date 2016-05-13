@@ -3,7 +3,7 @@
 
 from __future__ import print_function
 
-from pika.exceptions import ConnectionClosed
+from pika.exceptions import ConnectionClosed, ProbableAuthenticationError
 
 """
 Talk to the CosmicPi Arduino DUE accross the serial USB link
@@ -85,7 +85,9 @@ def main():
         print ("Fatal: Couln't establish a connection to the broker. Please check the connection parameters.")
         print ("Fatal: Connection parameters were: %s:%s@%s:%s" % (username, password, host, port))
         sys.exit(1)
-
+    except ProbableAuthenticationError:
+        print ("Fatal: Couln't establish a connection to the broker. Probably incorrect connection credentials.")
+        sys.exit(1)
 
 
     pushflg = False
