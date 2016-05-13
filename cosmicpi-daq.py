@@ -288,7 +288,7 @@ def main():
                         if udpflg:
                             sio.send_event_pkt(vbuf)
                         if logflg:
-                            log.write(vbuf)
+                            log.write(vbuf + '\n')
 
                         continue
                 if wstflg:
@@ -310,7 +310,7 @@ def main():
                         if udpflg:
                             sio.send_event_pkt(wbuf)
                         if logflg:
-                            log.write(wbuf)
+                            log.write(wbuf + '\n')
 
                         continue
                 if evtflg:
@@ -331,7 +331,7 @@ def main():
                         if udpflg:
                             sio.send_event_pkt(ebuf)
                         if logflg:
-                            log.write(ebuf)
+                            log.write(ebuf + '\n')
 
                         continue
                 if debug:
