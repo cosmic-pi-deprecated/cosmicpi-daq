@@ -32,11 +32,34 @@ import serial
 import time
 import traceback
 import os
+import termios
 from optparse import OptionParser
 
 from event import Event
 from sock import Socket_io
 from keyboard import KeyBoard
+
+class usb_io(object):
+
+    def __init__(self,usbdev,baudrate,timeout):
+	self.usbdev   = usbdev
+	self.baudrate = baudrate
+	self.timeout  = timeout
+
+    def open(self):
+        self.usb = serial.Serial(port=self.usbdev, baudrate=self.baudrate, timeout=self.timeout)
+        self.attr = termios.tcgetattr(self.usb)
+        self.attr[2] = self.attr[2] & ~termios.HUPCL            # Clear HUPCL in control reg (2)
+        termios.tcsetattr(self.usb, termios.TCSANOW, self.attr) # and write
+
+    def close(self):
+        self.usb.close()
+
+    def readline(self):
+        return self.usb.readline()
+
+    def write(self,arg):
+        self.usb.write(arg)
 
 def main():
     use = "Usage: %prog [--ip=cosmicpi.ddns.net --port=4901 --usb=/dev/ttyACM0 --debug --dirnam=/tmp]"
@@ -107,8 +130,9 @@ def main():
         print ("Log file is: %s" % lgf)
 
     try:
-        ser = serial.Serial(port=usbdev, baudrate=9600, timeout=60)
-        ser.flush()
+        usb = usb_io(usbdev,9600,60)
+        usb.open()
+
     except Exception, e:
         msg = "Exception: Cant open USB device: %s" % (e)
         print ("Fatal: %s" % msg)
@@ -228,7 +252,7 @@ def main():
                     print ("")
 
                     if debug:
-                        ser.write("HELP")
+                        usb.write("HELP")
 
                 elif cmd.find("n") != -1:
                     if udpflg:
@@ -246,21 +270,21 @@ def main():
 
                 else:
                     print ("Arduino < %s\n" % cmd)
-                    ser.write(cmd.upper())
+                    usb.write(cmd.upper())
 
                 kbrd.echo_off()
 
             # Process Arduino data json strings
 
-            rc = ser.readline()
+            rc = usb.readline()
             sio.connection.process_data_events()
 
             if len(rc) == 0:
                 print ("Serial input buffer empty")
-                ser.close()
+                usb.close()
                 time.sleep(1)
-                ser = serial.Serial(port=usbdev, baudrate=9600, timeout=60)
-                rc = ser.readline()
+                usb.open()
+                rc = usb.readline()
                 if len(rc) == 0:
                     break
                 print ("Serial Reopened OK")
@@ -357,7 +381,7 @@ def main():
         kbrd.echo_on()
         tim = evt.get_tim()
         print ("\nUp time:%s Quitting ..." % tim["uptime"])
-        ser.close()
+        usb.close()
         log.close()
         sio.close()
         time.sleep(1)
