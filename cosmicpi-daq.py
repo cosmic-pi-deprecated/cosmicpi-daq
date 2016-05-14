@@ -3,6 +3,8 @@
 
 from __future__ import print_function
 
+from pika.exceptions import ConnectionClosed, ProbableAuthenticationError
+
 """
 Talk to the CosmicPi Arduino DUE accross the serial USB link
 This program has the following functions ...
@@ -69,9 +71,24 @@ def main():
     evtflg = options.evtflg
     patok = options.patok
 
-    credentials = options.credentials.split(':')
-    username = credentials[0]
-    password = credentials[1]
+    try:
+        credentials = options.credentials.split(':')
+        username = credentials[0]
+        password = credentials[1]
+    except Exception:
+        print("Fatal: Couln't parse the connection credentials. Format is username:password")
+        sys.exit(1)
+
+    try:
+        sio = Socket_io(host, port, username, password)
+    except ConnectionClosed:
+        print ("Fatal: Couln't establish a connection to the broker. Please check the connection parameters.")
+        print ("Fatal: Connection parameters were: %s:%s@%s:%s" % (username, password, host, port))
+        sys.exit(1)
+    except ProbableAuthenticationError:
+        print ("Fatal: Couln't establish a connection to the broker. Probably incorrect connection credentials.")
+        sys.exit(1)
+
 
     pushflg = False
 
@@ -118,8 +135,6 @@ def main():
     events = 0
     vbrts = 0
     weathers = 0
-
-    sio = Socket_io(host, port, username, password)
 
     kbrd = KeyBoard()
     kbrd.echo_off()
