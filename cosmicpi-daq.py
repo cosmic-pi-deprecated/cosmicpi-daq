@@ -1,5 +1,5 @@
-#!	/usr/bin/python
-#	coding: utf8
+#! /usr/bin/python
+#  coding: utf8
 
 from __future__ import print_function
 
@@ -11,10 +11,10 @@ This program has the following functions ...
 
 1) Build event messages and send them to a server or local port
 
-	Events are any combination of Vibration, Weather and CosmicRays
-	Hence the Arduino can behave as a weather station, as a vibration/Siesmic monitor
-	and as a cosmic ray detector.
-	There is a gyroscope available but I don't use it
+  Events are any combination of Vibration, Weather and CosmicRays
+  Hence the Arduino can behave as a weather station, as a vibration/Siesmic monitor
+  and as a cosmic ray detector.
+  There is a gyroscope available but I don't use it
 
 2) Perform diagnostics and monitoring of the Arduino via commands
 
@@ -33,8 +33,8 @@ import sys
 import serial
 import time
 import traceback
-import os
 import termios
+import logging.config
 from optparse import OptionParser
 
 from event import Event
@@ -44,9 +44,9 @@ from keyboard import KeyBoard
 class usb_io(object):
 
     def __init__(self,usbdev,baudrate,timeout):
-	self.usbdev   = usbdev
-	self.baudrate = baudrate
-	self.timeout  = timeout
+        self.usbdev   = usbdev
+        self.baudrate = baudrate
+        self.timeout  = timeout
 
     def open(self):
         self.usb = serial.Serial(port=self.usbdev, baudrate=self.baudrate, timeout=self.timeout)
@@ -82,6 +82,10 @@ def main():
 
     options, args = parser.parse_args()
 
+    logging.config.fileConfig("logging.conf")
+    logfile = logging.getLogger('file')
+    console = logging.getLogger(__name__)
+
     host = options.host
     port = options.port
     usbdev = options.usbdev
@@ -99,60 +103,41 @@ def main():
         username = credentials[0]
         password = credentials[1]
     except Exception:
-        print("Fatal: Couln't parse the connection credentials. Format is username:password")
+        console.error("Fatal: Couldn't parse the connection credentials. Format is username:password")
         sys.exit(1)
 
     try:
         sio = Socket_io(host, port, username, password)
     except ConnectionClosed:
-        print ("Fatal: Couln't establish a connection to the broker. Please check the connection parameters.")
-        print ("Fatal: Connection parameters were: %s:%s@%s:%s" % (username, password, host, port))
+        console.error("Fatal: Couldn't establish a connection to the broker. Please check the connection parameters.")
+        console.error("Fatal: Connection parameters were: %s:%s@%s:%s" % (username, password, host, port))
         sys.exit(1)
     except ProbableAuthenticationError:
-        print ("Fatal: Couln't establish a connection to the broker. Probably incorrect connection credentials.")
+        console.info("Fatal: Couldn't establish a connection to the broker. Probably incorrect connection credentials.")
         sys.exit(1)
 
 
     pushflg = False
 
-    print ("\n")
-    print ("options (Server IP address)     ip   : %s" % host)
-    print ("options (Server Port number)    port : %d" % port)
-    print ("options (USB device name)       usb  : %s" % usbdev)
-    print ("options (Logging directory)     odir : %s" % logdir)
-    print ("options (Event logging)         log  : %s" % logflg)
-    print ("options (UDP sending)           udp  : %s" % udpflg)
-    print ("options (Vibration monitor)     vib  : %s" % vibflg)
-    print ("options (Weather Station)       wst  : %s" % wstflg)
-    print ("options (Cosmic Ray Station)    cray : %s" % evtflg)
-    print ("options (Push notifications)    patk : %s" % patok)
-    print ("options (Debug Flag)            debug: %s" % debug)
+    console.debug("options (Server IP address)     ip   : %s" % host)
+    console.debug("options (Server Port number)    port : %d" % port)
+    console.debug("options (USB device name)       usb  : %s" % usbdev)
+    console.debug("options (Logging directory)     odir : %s" % logdir)
+    console.debug("options (Event logging)         log  : %s" % logflg)
+    console.debug("options (UDP sending)           udp  : %s" % udpflg)
+    console.debug("options (Vibration monitor)     vib  : %s" % vibflg)
+    console.debug("options (Weather Station)       wst  : %s" % wstflg)
+    console.debug("options (Cosmic Ray Station)    cray : %s" % evtflg)
+    console.debug("options (Push notifications)    patk : %s" % patok)
+    console.debug("options (Debug Flag)            debug: %s" % debug)
 
-    print ("\ncosmic_pi monitor running, hit '>' for commands\n")
-
-    ts = time.strftime("%d-%b-%Y-%H-%M-%S", time.gmtime(time.time()))
-    lgf = "%s/cosmicpi-logs/%s.log" % (logdir, ts)
-    dir = os.path.dirname(lgf)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    try:
-        log = open(lgf, "w");
-    except Exception, e:
-        msg = "Exception: Cant open log file: %s" % (e)
-        print ("Fatal: %s" % msg)
-        sys.exit(1)
-
-    if options.debug:
-        print ("\n")
-        print ("Log file is: %s" % lgf)
+    console.debug("cosmic_pi monitor running, hit '>' for commands")
 
     try:
-        usb = usb_io(usbdev,9600,60)
+        usb = usb_io(usbdev, 9600, 60)
         usb.open()
-
-    except Exception, e:
-        msg = "Exception: Cant open USB device: %s" % (e)
-        print ("Fatal: %s" % msg)
+    except Exception as e:
+        console.error("Exception: Cant open USB device: %s" % (e))
         sys.exit(1)
 
     evt = Event()
@@ -245,7 +230,6 @@ def main():
                     print ("Vibration.....: Sent:%d Flag:%s" % (vbrts, vibflg))
                     print ("WeatherStation: Flag:%s" % (wstflg))
                     print ("Events........: Sent:%d LogFlag:%s" % (events, logflg))
-                    print ("LogFile.......: %s\n" % (lgf))
 
                 elif cmd.find("h") != -1:
                     print ("MONITOR COMMANDS")
@@ -295,16 +279,17 @@ def main():
             sio.connection.process_data_events()
 
             if len(rc) == 0:
-                print ("Serial input buffer empty")
+                console.warn("Serial input buffer empty")
                 usb.close()
                 time.sleep(1)
                 usb.open()
                 rc = usb.readline()
                 if len(rc) == 0:
                     break
-                print ("Serial Reopened OK")
+                console.info("Serial Reopened OK")
                 continue
             else:
+                rc = rc.replace('\n', '')
                 evt.parse(rc)
 
                 if vibflg:
@@ -318,16 +303,16 @@ def main():
                         acl = evt.get_acl()
                         mag = evt.get_mag()
                         sqn = evt.get_sqn()
-                        print ("")
-                        print ("Vibration.....: count:%d direction:%s count:%s " % (vbrts, vib["direction"], vib["count"]))
-                        print ("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
-                        print ("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
-                        print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
+                        console.info("")
+                        console.info("Vibration.....: count:%d direction:%s count:%s " % (vbrts, vib["direction"], vib["count"]))
+                        console.info("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
+                        console.info("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
+                        console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
                             sio.send_event_pkt(vbuf)
                         if logflg:
-                            log.write(vbuf + '\n')
+                            logfile.info(vbuf)
 
                         continue
                 if wstflg:
@@ -341,15 +326,15 @@ def main():
                         htu = evt.get_htu()
                         loc = evt.get_loc()
                         sqn = evt.get_sqn()
-                        print ("")
-                        print ("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
-                        print ("humidity......: temperature:%s humidity:%s altitude:%s" % (htu["temperature"], htu["humidity"], loc["altitude"]))
-                        print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
+                        console.info("")
+                        console.info("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
+                        console.info("humidity......: temperature:%s humidity:%s altitude:%s" % (htu["temperature"], htu["humidity"], loc["altitude"]))
+                        console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
                             sio.send_event_pkt(wbuf)
                         if logflg:
-                            log.write(wbuf + '\n')
+                            logfile.info(wbuf)
 
                         continue
                 if evtflg:
@@ -362,22 +347,22 @@ def main():
                         tim = evt.get_tim()
                         sqn = evt.get_sqn()
                         loc = evt.get_loc()
-                        print ("")
-                        print ("Cosmic Event..: event_number:%s timer_frequency:%s ticks:%s timestamp:%s" % (
+                        console.info("")
+                        console.info("Cosmic Event..: event_number:%s timer_frequency:%s ticks:%s timestamp:%s" % (
                             evd["event_number"], evd["timer_frequency"], evd["ticks"], evd["timestamp"]))
-                        print ("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
-                        print ("Location......: latitude:%s longitude:%s altitude:%s" % (
+                        console.info("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
+                        console.info("Location......: latitude:%s longitude:%s altitude:%s" % (
                             loc["latitude"], loc["longitude"], loc["altitude"]))
-                        print ("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
+                        console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
 
                         if udpflg:
                             sio.send_event_pkt(ebuf)
                         if logflg:
-                            log.write(ebuf + '\n')
+                            logfile.info(ebuf)
 
                         continue
                 if debug:
-                    sys.stdout.write(rc)
+                    console.debug(rc)
                 else:
                     ts = time.strftime("%d/%b/%Y %H:%M:%S", time.gmtime(time.time()))
                     tim = evt.get_tim()
@@ -387,17 +372,14 @@ def main():
                     sys.stdout.flush()
 
     except Exception, e:
-        msg = "Exception: main: %s" % (e)
-        print ("Fatal: %s" % msg)
+        console.info("Exception: main: %s" % (e))
         traceback.print_exc()
-
 
     finally:
         kbrd.echo_on()
         tim = evt.get_tim()
-        print ("\nUp time:%s Quitting ..." % tim["uptime"])
+        console.info("\nUp time:%s Quitting ..." % tim["uptime"])
         usb.close()
-        log.close()
         sio.close()
         time.sleep(1)
         sys.exit(0)
