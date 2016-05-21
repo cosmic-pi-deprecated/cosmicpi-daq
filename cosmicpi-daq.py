@@ -41,9 +41,15 @@ from event import Event
 from sock import Socket_io
 from keyboard import KeyBoard
 
+
+logging.config.fileConfig("logging.conf")
+logfile = logging.getLogger('file')
+console = logging.getLogger(__name__)
+
+
 class usb_io(object):
 
-    def __init__(self,usbdev,baudrate,timeout):
+    def __init__(self, usbdev, baudrate, timeout):
         self.usbdev   = usbdev
         self.baudrate = baudrate
         self.timeout  = timeout
@@ -53,15 +59,35 @@ class usb_io(object):
         self.attr = termios.tcgetattr(self.usb)
         self.attr[2] = self.attr[2] & ~termios.HUPCL            # Clear HUPCL in control reg (2)
         termios.tcsetattr(self.usb, termios.TCSANOW, self.attr) # and write
+        console.info("Serial port %s opened" % self.usbdev)
 
     def close(self):
         self.usb.close()
 
     def readline(self):
-        return self.usb.readline()
+        if not self.usb.is_open:
+            try:
+                self.open()
+            except Exception as e:
+                console.warn("Couldn't open serial port: %s" % e)
+                time.sleep(1)
 
-    def write(self,arg):
+        try:
+            line = self.usb.readline()
+            if len(line) == 0:
+                console.warn("Serial input buffer empty")
+                self.usb.close()
+
+        except Exception as e:
+            console.warn("Error reading from serial port: %s" % e)
+            self.usb.close()
+            line = ''
+
+        return line
+
+    def write(self, arg):
         self.usb.write(arg)
+
 
 def main():
     use = "Usage: %prog [--ip=cosmicpi.ddns.net --port=4901 --usb=/dev/ttyACM0 --debug --dirnam=/tmp]"
@@ -81,10 +107,6 @@ def main():
     parser.add_option("-k", "--patk", help="Server push notification token", dest="patok", default="")
 
     options, args = parser.parse_args()
-
-    logging.config.fileConfig("logging.conf")
-    logfile = logging.getLogger('file')
-    console = logging.getLogger(__name__)
 
     host = options.host
     port = options.port
@@ -278,98 +300,87 @@ def main():
             rc = usb.readline()
             sio.connection.process_data_events()
 
-            if len(rc) == 0:
-                console.warn("Serial input buffer empty")
-                usb.close()
-                time.sleep(1)
-                usb.open()
-                rc = usb.readline()
-                if len(rc) == 0:
-                    break
-                console.info("Serial Reopened OK")
-                continue
-            else:
-                rc = rc.replace('\n', '')
-                evt.parse(rc)
+            rc = rc.replace('\n', '')
+            evt.parse(rc)
 
-                if vibflg:
-                    vbuf = evt.get_vibration()
-                    if len(vbuf) > 0:
-                        vbrts = vbrts + 1
-                        evt.nxt_sqn()
-                        dat = evt.get_dat()
-                        vib = evt.get_vib()
-                        tim = evt.get_tim()
-                        acl = evt.get_acl()
-                        mag = evt.get_mag()
-                        sqn = evt.get_sqn()
-                        console.info("")
-                        console.info("Vibration.....: count:%d direction:%s count:%s " % (vbrts, vib["direction"], vib["count"]))
-                        console.info("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
-                        console.info("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
-                        console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
-
-                        if udpflg:
-                            sio.send_event_pkt(vbuf)
-                        if logflg:
-                            logfile.info(vbuf)
-
-                        continue
-                if wstflg:
-                    wbuf = evt.get_weather()
-                    if len(wbuf) > 0:
-                        weathers = weathers + 1
-                        evt.nxt_sqn()
-                        dat = evt.get_dat()
-                        tim = evt.get_tim()
-                        bmp = evt.get_bmp()
-                        htu = evt.get_htu()
-                        loc = evt.get_loc()
-                        sqn = evt.get_sqn()
-                        console.info("")
-                        console.info("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
-                        console.info("humidity......: temperature:%s humidity:%s altitude:%s" % (htu["temperature"], htu["humidity"], loc["altitude"]))
-                        console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
-
-                        if udpflg:
-                            sio.send_event_pkt(wbuf)
-                        if logflg:
-                            logfile.info(wbuf)
-
-                        continue
-                if evtflg:
-                    ebuf = evt.get_event()
-                    if len(ebuf) > 1:
-                        events = events + 1
-                        evt.nxt_sqn()
-                        dat = evt.get_dat()
-                        evd = evt.get_evt()
-                        tim = evt.get_tim()
-                        sqn = evt.get_sqn()
-                        loc = evt.get_loc()
-                        console.info("")
-                        console.info("Cosmic Event..: event_number:%s timer_frequency:%s ticks:%s timestamp:%s" % (
-                            evd["event_number"], evd["timer_frequency"], evd["ticks"], evd["timestamp"]))
-                        console.info("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
-                        console.info("Location......: latitude:%s longitude:%s altitude:%s" % (
-                            loc["latitude"], loc["longitude"], loc["altitude"]))
-                        console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
-
-                        if udpflg:
-                            sio.send_event_pkt(ebuf)
-                        if logflg:
-                            logfile.info(ebuf)
-
-                        continue
-                if debug:
-                    console.debug(rc)
-                else:
-                    ts = time.strftime("%d/%b/%Y %H:%M:%S", time.gmtime(time.time()))
+            if vibflg:
+                vbuf = evt.get_vibration()
+                if len(vbuf) > 0:
+                    vbrts = vbrts + 1
+                    evt.nxt_sqn()
+                    dat = evt.get_dat()
+                    vib = evt.get_vib()
                     tim = evt.get_tim()
-                    sts = evt.get_sts()
-                    s = "cosmic_pi:uptime:%s :queue_size:%s time_string:[%s] %s    \r" % (tim["uptime"], sts["queue_size"], ts, tim["time_string"])
-                    sys.stdout.write(s)
-                    sys.stdout.flush()
+                    acl = evt.get_acl()
+                    mag = evt.get_mag()
+                    sqn = evt.get_sqn()
+                    console.info("")
+                    console.info("Vibration.....: count:%d direction:%s count:%s " % (vbrts, vib["direction"], vib["count"]))
+                    console.info("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
+                    console.info("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
+                    console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
+
+                    if udpflg:
+                        sio.send_event_pkt(vbuf)
+                    if logflg:
+                        logfile.info(vbuf)
+
+                    continue
+            if wstflg:
+                wbuf = evt.get_weather()
+                if len(wbuf) > 0:
+                    weathers = weathers + 1
+                    evt.nxt_sqn()
+                    dat = evt.get_dat()
+                    tim = evt.get_tim()
+                    bmp = evt.get_bmp()
+                    htu = evt.get_htu()
+                    loc = evt.get_loc()
+                    sqn = evt.get_sqn()
+                    console.info("")
+                    console.info("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
+                    console.info("humidity......: temperature:%s humidity:%s altitude:%s" % (htu["temperature"], htu["humidity"], loc["altitude"]))
+                    console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
+
+                    if udpflg:
+                        sio.send_event_pkt(wbuf)
+                    if logflg:
+                        logfile.info(wbuf)
+
+                    continue
+            if evtflg:
+                ebuf = evt.get_event()
+                if len(ebuf) > 1:
+                    events = events + 1
+                    evt.nxt_sqn()
+                    dat = evt.get_dat()
+                    evd = evt.get_evt()
+                    tim = evt.get_tim()
+                    sqn = evt.get_sqn()
+                    loc = evt.get_loc()
+                    console.info("")
+                    console.info("Cosmic Event..: event_number:%s timer_frequency:%s ticks:%s timestamp:%s" % (
+                        evd["event_number"], evd["timer_frequency"], evd["ticks"], evd["timestamp"]))
+                    console.info("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
+                    console.info("Location......: latitude:%s longitude:%s altitude:%s" % (
+                        loc["latitude"], loc["longitude"], loc["altitude"]))
+                    console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
+
+                    if udpflg:
+                        sio.send_event_pkt(ebuf)
+                    if logflg:
+                        logfile.info(ebuf)
+
+                    continue
+            if debug:
+                console.debug(rc)
+            else:
+                ts = time.strftime("%d/%b/%Y %H:%M:%S", time.gmtime(time.time()))
+                tim = evt.get_tim()
+                sts = evt.get_sts()
+                s = "cosmic_pi:uptime:%s :queue_size:%s time_string:[%s] %s    \r" % (tim["uptime"], sts["queue_size"], ts, tim["time_string"])
+                sys.stdout.write(s)
+                sys.stdout.flush()
 
     except Exception, e:
         console.info("Exception: main: %s" % (e))
