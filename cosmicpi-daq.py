@@ -20,8 +20,6 @@ This program has the following functions ...
 
 3) Log events to the log file
 
-Typing the '>' character turns on command input
-
 It is important to keep the Python dictionary objects synchronised with the Arduino firmware
 otherwise this monitor will not understand the data being sent to it
 
@@ -38,8 +36,8 @@ import logging.config
 from optparse import OptionParser
 
 from sock import Socket_io
-from keyboard import KeyBoard
 from detector import Detector
+from command_handler import CommandHandler
 
 
 logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
@@ -153,8 +151,6 @@ def main():
     console.debug("options (Push notifications)    patk : %s" % patok)
     console.debug("options (Debug Flag)            debug: %s" % debug)
 
-    console.debug("cosmic_pi monitor running, hit '>' for commands")
-
     try:
         usb = usb_io(usbdev, 9600, 60)
         usb.open()
@@ -162,137 +158,16 @@ def main():
         console.error("Exception: Cant open USB device: %s" % (e))
         sys.exit(1)
 
-    kbrd = KeyBoard()
-    kbrd.echo_off()
-
     detector = Detector(usb, sio, options)
 
     try:
         detector.start()
 
-        while (True):
-            if kbrd.test_input():
-                kbrd.echo_on()
-                print ("\n")
-                cmd = raw_input(">")
+        command_handler = CommandHandler(detector, usb, options)
+        command_handler.start()
 
-                if cmd.find("q") != -1:
-                    break
-
-                elif cmd.find("d") != -1:
-                    if debug:
-                        debug = False
-                    else:
-                        debug = True
-                    print ("Debug:%s\n" % debug)
-
-                elif cmd.find("v") != -1:
-                    if vibflg:
-                        vibflg = False
-                    else:
-                        vibflg = True
-                    print ("Vibration:%s\n" % vibflg)
-
-                elif cmd.find("w") != -1:
-                    if wstflg:
-                        wstflg = False
-                    else:
-                        wstflg = True
-                    print ("WeatherStation:%s\n" % wstflg)
-
-                # elif cmd.find("r") != -1:
-                #     if len(patok) > 0:
-                #         if pushflg:
-                #             pushflg = False
-                #             print ("Unregister server notifications")
-                #         else:
-                #             pushflg = True
-                #             print ("Register for server notifications")
-                # 
-                #         if udpflg:
-                #             evt.set_pat(patok, pushflg)
-                #             pbuf = evt.get_notification()
-                #             sio.send_event_pkt(pbuf)
-                #             sbuf = evt.get_status()
-                #             sio.send_event_pkt(sbuf)
-                #             print ("Sent notification request:%s" % pbuf)
-                #         else:
-                #             print ("UDP sending is OFF, can not register with server")
-                #             pbuf = ""
-                #     else:
-                #         print ("Token option is not set")
-
-                elif cmd.find("s") != -1:
-                    tim = detector.sensors.timing
-                    sts = detector.sensors.status
-                    loc = detector.sensors.location
-                    acl = detector.sensors.accelerometer
-                    mag = detector.sensors.magnetometer
-                    bmp = detector.sensors.barometer
-                    htu = detector.sensors.temperature
-                    vib = detector.sensors.vibration
-
-                    print ("ARDUINO STATUS")
-                    print ("Status........: uptime:%s counter_frequency:%s queue_size:%s missed_events:%s" % (
-                        tim["uptime"], tim["counter_frequency"], sts["queue_size"], sts["missed_events"]))
-                    print ("HardwareStatus: temp_status:%s baro_status:%s accel_status:%s mag_status:%s gps_status:%s" % (
-                        sts["temp_status"], sts["baro_status"], sts["accel_status"], sts["mag_status"], sts["gps_status"]))
-                    print ("Location......: latitude:%s longitude:%s altitude:%s" % (loc["latitude"], loc["longitude"], loc["altitude"]))
-                    print ("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
-                    print ("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
-                    print ("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
-                    print ("Humidity......: temperature:%s humidity:%s" % (htu["temperature"], htu["humidity"]))
-                    print ("Vibration.....: direction:%s count:%s\n" % (vib["direction"], vib["count"]))
-
-                    print ("MONITOR STATUS")
-                    print ("USB device....: %s" % (usbdev))
-                    print ("Remote........: Ip:%s Port:%s UdpFlag:%s" % (host, port, udpflg))
-                    print ("Notifications.: Flag:%s Token:%s" % (pushflg, patok))
-                    print ("Vibration.....: Sent:%d Flag:%s" % (detector.vbrts, vibflg))
-                    print ("WeatherStation: Flag:%s" % (wstflg))
-                    print ("Events........: Sent:%d LogFlag:%s" % (detector.events, logflg))
-
-                elif cmd.find("h") != -1:
-                    print ("MONITOR COMMANDS")
-                    print ("   q=quit, s=status, d=toggle_debug, n=toggle_send, l=toggle_log")
-                    print ("   v=vibration, w=weather, r=toggle_notifications h=help\n")
-                    print ("ARDUINO COMMANDS")
-                    print ("   NOOP, Do nothing")
-                    print ("   HELP, Display commands")
-                    print ("   HTUX, Reset the HTH chip")
-                    print ("   HTUD, HTU Temperature-Humidity display rate, <rate>")
-                    print ("   BMPD, BMP Temperature-Altitude display rate, <rate>")
-                    print ("   LOCD, Location latitude-longitude display rate, <rate>")
-                    print ("   TIMD, Timing uptime-frequency-etm display rate, <rate>")
-                    print ("   STSD, Status info display rate, <rate>")
-                    print ("   EVQT, Event queue dump threshold, <threshold 1..32>")
-                    print ("   ACLD, Accelerometer display rate, <rate>")
-                    print ("   MAGD, Magnetometer display rate, <rate>")
-                    print ("   ACLT, Accelerometer event trigger threshold, <threshold 0..127>")
-                    print ("")
-
-                    if debug:
-                        usb.write("HELP")
-
-                elif cmd.find("n") != -1:
-                    if udpflg:
-                        udpflg = False
-                    else:
-                        udpflg = True
-                    print ("Send:%s\n" % udpflg)
-
-                elif cmd.find("l") != -1:
-                    if logflg:
-                        logflg = False
-                    else:
-                        logflg = True
-                    print ("Log:%s\n" % logflg)
-
-                else:
-                    print ("Arduino < %s\n" % cmd)
-                    usb.write(cmd.upper())
-
-                kbrd.echo_off()
+        while True:
+            time.sleep(1)
 
     except Exception, e:
         console.info("Exception: main: %s" % (e))
@@ -302,7 +177,6 @@ def main():
         detector.stop()
         console.info("Quitting ...")
         time.sleep(1)
-        kbrd.echo_on()
         usb.close()
         sio.close()
         sys.exit(0)
