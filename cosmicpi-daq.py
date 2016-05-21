@@ -51,6 +51,7 @@ class usb_io(object):
         self.usbdev   = usbdev
         self.baudrate = baudrate
         self.timeout  = timeout
+        self.is_open = False
 
     def open(self):
         self.usb = serial.Serial(port=self.usbdev, baudrate=self.baudrate, timeout=self.timeout)
@@ -58,12 +59,14 @@ class usb_io(object):
         self.attr[2] = self.attr[2] & ~termios.HUPCL            # Clear HUPCL in control reg (2)
         termios.tcsetattr(self.usb, termios.TCSANOW, self.attr) # and write
         console.info("Serial port %s opened" % self.usbdev)
+        self.is_open = True
 
     def close(self):
         self.usb.close()
+        self.is_open = False
 
     def readline(self):
-        if not self.usb.is_open:
+        if not self.is_open:
             try:
                 self.open()
             except Exception as e:
@@ -74,11 +77,11 @@ class usb_io(object):
             line = self.usb.readline()
             if len(line) == 0:
                 console.warn("Serial input buffer empty")
-                self.usb.close()
+                self.close()
 
         except Exception as e:
             console.warn("Error reading from serial port: %s" % e)
-            self.usb.close()
+            self.close()
             line = ''
 
         return line
