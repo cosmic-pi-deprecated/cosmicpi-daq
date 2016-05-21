@@ -37,12 +37,12 @@ import termios
 import logging.config
 from optparse import OptionParser
 
-from event import Event
 from sock import Socket_io
 from keyboard import KeyBoard
+from detector import Detector
 
 
-logging.config.fileConfig("logging.conf")
+logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
 logfile = logging.getLogger('file')
 console = logging.getLogger(__name__)
 
@@ -162,15 +162,14 @@ def main():
         console.error("Exception: Cant open USB device: %s" % (e))
         sys.exit(1)
 
-    evt = Event()
-    events = 0
-    vbrts = 0
-    weathers = 0
-
     kbrd = KeyBoard()
     kbrd.echo_off()
 
+    detector = Detector(usb, sio, options)
+
     try:
+        detector.start()
+
         while (True):
             if kbrd.test_input():
                 kbrd.echo_on()
@@ -201,37 +200,37 @@ def main():
                         wstflg = True
                     print ("WeatherStation:%s\n" % wstflg)
 
-                elif cmd.find("r") != -1:
-                    if len(patok) > 0:
-                        if pushflg:
-                            pushflg = False
-                            print ("Unregister server notifications")
-                        else:
-                            pushflg = True
-                            print ("Register for server notifications")
-
-                        if udpflg:
-                            evt.set_pat(patok, pushflg)
-                            pbuf = evt.get_notification()
-                            sio.send_event_pkt(pbuf)
-                            sbuf = evt.get_status()
-                            sio.send_event_pkt(sbuf)
-                            print ("Sent notification request:%s" % pbuf)
-                        else:
-                            print ("UDP sending is OFF, can not register with server")
-                            pbuf = ""
-                    else:
-                        print ("Token option is not set")
+                # elif cmd.find("r") != -1:
+                #     if len(patok) > 0:
+                #         if pushflg:
+                #             pushflg = False
+                #             print ("Unregister server notifications")
+                #         else:
+                #             pushflg = True
+                #             print ("Register for server notifications")
+                # 
+                #         if udpflg:
+                #             evt.set_pat(patok, pushflg)
+                #             pbuf = evt.get_notification()
+                #             sio.send_event_pkt(pbuf)
+                #             sbuf = evt.get_status()
+                #             sio.send_event_pkt(sbuf)
+                #             print ("Sent notification request:%s" % pbuf)
+                #         else:
+                #             print ("UDP sending is OFF, can not register with server")
+                #             pbuf = ""
+                #     else:
+                #         print ("Token option is not set")
 
                 elif cmd.find("s") != -1:
-                    tim = evt.get_tim()
-                    sts = evt.get_sts()
-                    loc = evt.get_loc()
-                    acl = evt.get_acl()
-                    mag = evt.get_mag()
-                    bmp = evt.get_bmp()
-                    htu = evt.get_htu()
-                    vib = evt.get_vib()
+                    tim = detector.sensors.timing
+                    sts = detector.sensors.status
+                    loc = detector.sensors.location
+                    acl = detector.sensors.accelerometer
+                    mag = detector.sensors.magnetometer
+                    bmp = detector.sensors.barometer
+                    htu = detector.sensors.temperature
+                    vib = detector.sensors.vibration
 
                     print ("ARDUINO STATUS")
                     print ("Status........: uptime:%s counter_frequency:%s queue_size:%s missed_events:%s" % (
@@ -249,9 +248,9 @@ def main():
                     print ("USB device....: %s" % (usbdev))
                     print ("Remote........: Ip:%s Port:%s UdpFlag:%s" % (host, port, udpflg))
                     print ("Notifications.: Flag:%s Token:%s" % (pushflg, patok))
-                    print ("Vibration.....: Sent:%d Flag:%s" % (vbrts, vibflg))
+                    print ("Vibration.....: Sent:%d Flag:%s" % (detector.vbrts, vibflg))
                     print ("WeatherStation: Flag:%s" % (wstflg))
-                    print ("Events........: Sent:%d LogFlag:%s" % (events, logflg))
+                    print ("Events........: Sent:%d LogFlag:%s" % (detector.events, logflg))
 
                 elif cmd.find("h") != -1:
                     print ("MONITOR COMMANDS")
@@ -295,104 +294,17 @@ def main():
 
                 kbrd.echo_off()
 
-            # Process Arduino data json strings
-
-            rc = usb.readline()
-            sio.connection.process_data_events()
-
-            rc = rc.replace('\n', '')
-            evt.parse(rc)
-
-            if vibflg:
-                vbuf = evt.get_vibration()
-                if len(vbuf) > 0:
-                    vbrts = vbrts + 1
-                    evt.nxt_sqn()
-                    dat = evt.get_dat()
-                    vib = evt.get_vib()
-                    tim = evt.get_tim()
-                    acl = evt.get_acl()
-                    mag = evt.get_mag()
-                    sqn = evt.get_sqn()
-                    console.info("")
-                    console.info("Vibration.....: count:%d direction:%s count:%s " % (vbrts, vib["direction"], vib["count"]))
-                    console.info("Accelerometer.: x:%s y:%s z:%s" % (acl["x"], acl["y"], acl["z"]))
-                    console.info("Magnetometer..: x:%s y:%s z:%s" % (mag["x"], mag["y"], mag["z"]))
-                    console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
-
-                    if udpflg:
-                        sio.send_event_pkt(vbuf)
-                    if logflg:
-                        logfile.info(vbuf)
-
-                    continue
-            if wstflg:
-                wbuf = evt.get_weather()
-                if len(wbuf) > 0:
-                    weathers = weathers + 1
-                    evt.nxt_sqn()
-                    dat = evt.get_dat()
-                    tim = evt.get_tim()
-                    bmp = evt.get_bmp()
-                    htu = evt.get_htu()
-                    loc = evt.get_loc()
-                    sqn = evt.get_sqn()
-                    console.info("")
-                    console.info("Barometer.....: temperature:%s pressure:%s altitude:%s" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
-                    console.info("humidity......: temperature:%s humidity:%s altitude:%s" % (htu["temperature"], htu["humidity"], loc["altitude"]))
-                    console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
-
-                    if udpflg:
-                        sio.send_event_pkt(wbuf)
-                    if logflg:
-                        logfile.info(wbuf)
-
-                    continue
-            if evtflg:
-                ebuf = evt.get_event()
-                if len(ebuf) > 1:
-                    events = events + 1
-                    evt.nxt_sqn()
-                    dat = evt.get_dat()
-                    evd = evt.get_evt()
-                    tim = evt.get_tim()
-                    sqn = evt.get_sqn()
-                    loc = evt.get_loc()
-                    console.info("")
-                    console.info("Cosmic Event..: event_number:%s timer_frequency:%s ticks:%s timestamp:%s" % (
-                        evd["event_number"], evd["timer_frequency"], evd["ticks"], evd["timestamp"]))
-                    console.info("adc[[Ch0][Ch1]: adc:%s" % (str(evd["adc"])))
-                    console.info("Location......: latitude:%s longitude:%s altitude:%s" % (
-                        loc["latitude"], loc["longitude"], loc["altitude"]))
-                    console.info("Time..........: uptime:%s time_string:%s sequence_number:%d\n" % (tim["uptime"], tim["time_string"], sqn["number"]))
-
-                    if udpflg:
-                        sio.send_event_pkt(ebuf)
-                    if logflg:
-                        logfile.info(ebuf)
-
-                    continue
-            if debug:
-                console.debug(rc)
-            else:
-                ts = time.strftime("%d/%b/%Y %H:%M:%S", time.gmtime(time.time()))
-                tim = evt.get_tim()
-                sts = evt.get_sts()
-                s = "cosmic_pi:uptime:%s :queue_size:%s time_string:[%s] %s    \r" % (tim["uptime"], sts["queue_size"], ts, tim["time_string"])
-                sys.stdout.write(s)
-                sys.stdout.flush()
-
     except Exception, e:
         console.info("Exception: main: %s" % (e))
         traceback.print_exc()
 
     finally:
+        detector.stop()
+        console.info("Quitting ...")
+        time.sleep(1)
         kbrd.echo_on()
-        tim = evt.get_tim()
-        console.info("\nUp time:%s Quitting ..." % tim["uptime"])
         usb.close()
         sio.close()
-        time.sleep(1)
         sys.exit(0)
 
 if __name__ == '__main__':
