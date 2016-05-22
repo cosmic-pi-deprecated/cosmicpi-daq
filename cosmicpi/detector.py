@@ -71,21 +71,21 @@ class Detector(object):
             if not sensor:
                 continue
 
-            if self.options.vibflg and 'vibration' in sensor:
+            if self.options.monitoring['vibration'] and 'vibration' in sensor:
                 evt = Event(self.detector_id, self.get_next_sequence(), self.sensors)
                 self.vbrts += 1
                 log.info("Vibration event: %s" % evt)
                 self.handle_event(evt)
                 continue
 
-            if self.options.wstflg and 'temperature' in sensor:
+            if self.options.monitoring['weather'] and 'temperature' in sensor:
                 evt = Event(self.detector_id, self.get_next_sequence(), self.sensors)
                 self.weathers += 1
                 log.info("Weather event: %s" % evt)
                 self.handle_event(evt)
                 continue
 
-            if self.options.evtflg and 'event' in sensor:
+            if self.options.monitoring['cosmics'] and 'event' in sensor:
                 evt = Event(self.detector_id, self.get_next_sequence(), self.sensors)
                 self.events += 1
                 log.info("Cosmic event: %s" % evt)
@@ -110,9 +110,9 @@ class Detector(object):
         self.thread.join()
 
     def handle_event(self, event):
-        if self.options.udpflg:
+        if self.options.broker['enabled']:
             self.sio.send_event_pkt(event.to_json())
-        if self.options.logflg:
+        if self.options.logging['enabled']:
             logfile.info(event.to_json())
 
     def get_detector_id(self):
