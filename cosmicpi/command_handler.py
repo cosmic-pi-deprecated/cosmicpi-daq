@@ -40,7 +40,6 @@ class CommandHandler(object):
             log.info("Received command: %s" % cmd)
 
             try:
-
                 if cmd == 'd':
                     if self.options.debug:
                         self.options.debug = False
@@ -49,18 +48,18 @@ class CommandHandler(object):
                     response = "Debug:%s\n" % self.options.debug
 
                 elif cmd == 'v':
-                    if self.options.vibflg:
-                        self.options.vibflg = False
+                    if self.options.monitoring['vibration']:
+                        self.options.monitoring['vibration'] = False
                     else:
-                        self.options.vibflg = True
-                    response = "Vibration:%s\n" % self.options.vibflg
+                        self.options.monitoring['vibration'] = True
+                    response = "Vibration:%s\n" % self.options.monitoring['vibration']
 
                 elif cmd == 'w':
-                    if self.options.wstflg:
-                        self.options.wstflg = False
+                    if self.options.monitoring['weather']:
+                        self.options.monitoring['weather'] = False
                     else:
-                        self.options.wstflg = True
-                    response = "WeatherStation:%s\n" % self.options.wstflg
+                        self.options.monitoring['weather'] = True
+                    response = "WeatherStation:%s\n" % self.options.monitoring['weather']
 
                 # elif cmd.find("r") != -1:
                 #     if len(patok) > 0:
@@ -107,26 +106,26 @@ class CommandHandler(object):
                     response += ("Vibration.....: direction:%s count:%s\n" % (vib["direction"], vib["count"]))
 
                     response += ("MONITOR STATUS\n")
-                    response += ("USB device....: %s\n" % (self.options.usbdev))
-                    response += ("Remote........: Ip:%s Port:%s UdpFlag:%s\n" % (self.options.host, self.options.port, self.options.udpflg))
+                    response += ("USB device....: %s\n" % (self.options.usb['device']))
+                    response += ("Remote........: Ip:%s Port:%s UdpFlag:%s\n" % (self.options.broker['host'], self.options.broker['port'], self.options.broker['enabled']))
                     # print ("Notifications.: Flag:%s Token:%s" % (pushflg, patok))
-                    response += ("Vibration.....: Sent:%d Flag:%s\n" % (self.detector.vbrts, self.options.vibflg))
-                    response += ("WeatherStation: Flag:%s\n" % (self.options.wstflg))
-                    response += ("Events........: Sent:%d LogFlag:%s\n" % (self.detector.events, self.options.logflg))
+                    response += ("Vibration.....: Sent:%d Flag:%s\n" % (self.detector.vbrts, self.options.monitoring['vibration']))
+                    response += ("WeatherStation: Flag:%s\n" % (self.options.monitoring['weather']))
+                    response += ("Events........: Sent:%d LogFlag:%s\n" % (self.detector.events, self.options.logging['enabled']))
 
                 elif cmd == 'n':
-                    if self.options.udpflg:
-                        self.options.udpflg = False
+                    if self.options.broker['enabled']:
+                        self.options.broker['enabled'] = False
                     else:
-                        self.options.udpflg = True
-                    response = ("Send:%s\n" % self.options.udpflg)
+                        self.options.broker['enabled'] = True
+                    response = ("Send:%s\n" % self.options.broker['enabled'])
 
                 elif cmd == 'l':
-                    if self.options.logflg:
-                        self.options.logflg = False
+                    if self.options.logging['enabled']:
+                        self.options.logging['enabled'] = False
                     else:
-                        self.options.logflg = True
-                    response = ("Log:%s\n" % self.options.logflg)
+                        self.options.logging['enabled'] = True
+                    response = ("Log:%s\n" % self.options.logging['enabled'])
 
                 elif cmd.startswith('arduino'):
                     response = ("%s" % cmd)
