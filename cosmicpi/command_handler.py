@@ -113,6 +113,13 @@ class CommandHandler(object):
                     response += ("WeatherStation: Flag:%s\n" % (self.options.monitoring['weather']))
                     response += ("Events........: Sent:%d LogFlag:%s\n" % (self.detector.events, self.options.logging['enabled']))
 
+                elif cmd == 'u':
+                    if self.usb.enabled:
+                        self.usb.disable()
+                    else:
+                        self.usb.enable()
+                    response = ("USB: %s" % ('enabled' if self.usb.enabled else 'disabled'))
+
                 elif cmd == 'n':
                     if self.options.broker['enabled']:
                         self.options.broker['enabled'] = False
