@@ -13,6 +13,7 @@ class UsbHandler(object):
         self.baudrate = baudrate
         self.timeout  = timeout
         self.is_open = False
+        self.enabled = True
 
     def open(self):
         self.usb = serial.Serial(port=self.usbdev, baudrate=self.baudrate, timeout=self.timeout)
@@ -23,10 +24,26 @@ class UsbHandler(object):
         self.is_open = True
 
     def close(self):
-        self.usb.close()
+        try:
+            self.usb.close()
+        except:
+            pass
         self.is_open = False
 
+    def enable(self):
+        self.enabled = True
+        log.info("Enabling serial port")
+
+    def disable(self):
+        self.enabled = False
+        log.info("Disabling serial port")
+        self.close()
+
     def readline(self):
+        if not self.enabled:
+            time.sleep(1)
+            return ''
+
         if not self.is_open:
             try:
                 self.open()

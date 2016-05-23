@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
-    install_requires=['pika', 'netifaces'],
+    install_requires=['pika', 'netifaces', 'blessings', 'cliff'],
     entry_points={
         "console_scripts": {
             "cosmicpi = cosmicpi:main",
