@@ -52,14 +52,16 @@ class CommandHandler(object):
                         self.options.monitoring['vibration'] = False
                     else:
                         self.options.monitoring['vibration'] = True
-                    response = "Vibration:%s\n" % self.options.monitoring['vibration']
+                    response = "Vibration:%s\n" % self.options.monitoring[
+                        'vibration']
 
                 elif cmd == 'w':
                     if self.options.monitoring['weather']:
                         self.options.monitoring['weather'] = False
                     else:
                         self.options.monitoring['weather'] = True
-                    response = "WeatherStation:%s\n" % self.options.monitoring['weather']
+                    response = "WeatherStation:%s\n" % self.options.monitoring[
+                        'weather']
 
                 # elif cmd.find("r") != -1:
                 #     if len(patok) > 0:
@@ -98,27 +100,44 @@ class CommandHandler(object):
                         tim["uptime"], tim["counter_frequency"], sts["queue_size"], sts["missed_events"])
                     response += ("HardwareStatus: temp_status:%s baro_status:%s accel_status:%s mag_status:%s gps_status:%s\n" % (
                         sts["temp_status"], sts["baro_status"], sts["accel_status"], sts["mag_status"], sts["gps_status"]))
-                    response += ("Location......: latitude:%s longitude:%s altitude:%s\n" % (loc["latitude"], loc["longitude"], loc["altitude"]))
-                    response += ("Accelerometer.: x:%s y:%s z:%s\n" % (acl["x"], acl["y"], acl["z"]))
-                    response += ("Magnetometer..: x:%s y:%s z:%s\n" % (mag["x"], mag["y"], mag["z"]))
-                    response += ("Barometer.....: temperature:%s pressure:%s altitude:%s\n" % (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
-                    response += ("Humidity......: temperature:%s humidity:%s\n" % (htu["temperature"], htu["humidity"]))
-                    response += ("Vibration.....: direction:%s count:%s\n" % (vib["direction"], vib["count"]))
+                    response += ("Location......: latitude:%s longitude:%s altitude:%s\n" %
+                                 (loc["latitude"], loc["longitude"], loc["altitude"]))
+                    response += ("Accelerometer.: x:%s y:%s z:%s\n" %
+                                 (acl["x"], acl["y"], acl["z"]))
+                    response += ("Magnetometer..: x:%s y:%s z:%s\n" %
+                                 (mag["x"], mag["y"], mag["z"]))
+                    response += (
+                        "Barometer.....: temperature:%s pressure:%s altitude:%s\n" %
+                        (bmp["temperature"], bmp["pressure"], bmp["altitude"]))
+                    response += ("Humidity......: temperature:%s humidity:%s\n" %
+                                 (htu["temperature"], htu["humidity"]))
+                    response += ("Vibration.....: direction:%s count:%s\n" %
+                                 (vib["direction"], vib["count"]))
 
                     response += ("MONITOR STATUS\n")
-                    response += ("USB device....: %s\n" % (self.options.usb['device']))
-                    response += ("Remote........: Ip:%s Port:%s UdpFlag:%s\n" % (self.options.broker['host'], self.options.broker['port'], self.options.broker['enabled']))
+                    response += ("USB device....: %s\n" %
+                                 (self.options.usb['device']))
+                    response += (
+                        "Remote........: Ip:%s Port:%s UdpFlag:%s\n" %
+                        (self.options.broker['host'],
+                         self.options.broker['port'],
+                         self.options.broker['enabled']))
                     # print ("Notifications.: Flag:%s Token:%s" % (pushflg, patok))
-                    response += ("Vibration.....: Sent:%d Flag:%s\n" % (self.detector.vbrts, self.options.monitoring['vibration']))
-                    response += ("WeatherStation: Flag:%s\n" % (self.options.monitoring['weather']))
-                    response += ("Events........: Sent:%d LogFlag:%s\n" % (self.detector.events, self.options.logging['enabled']))
+                    response += ("Vibration.....: Sent:%d Flag:%s\n" %
+                                 (self.detector.vbrts, self.options.monitoring['vibration']))
+                    response += ("WeatherStation: Flag:%s\n" %
+                                 (self.options.monitoring['weather']))
+                    response += ("Events........: Sent:%d LogFlag:%s\n" %
+                                 (self.detector.events, self.options.logging['enabled']))
 
                 elif cmd == 'u':
                     if self.usb.enabled:
                         self.usb.disable()
                     else:
                         self.usb.enable()
-                    response = ("USB: %s" % ('enabled' if self.usb.enabled else 'disabled'))
+                    response = (
+                        "USB: %s" %
+                        ('enabled' if self.usb.enabled else 'disabled'))
 
                 elif cmd == 'n':
                     if self.options.broker['enabled']:
@@ -147,4 +166,3 @@ class CommandHandler(object):
                 msg = "Error processing client command: %s" % e
                 log.warn(msg)
                 conn.send(msg)
-

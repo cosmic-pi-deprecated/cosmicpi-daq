@@ -3,6 +3,19 @@
 
 from __future__ import print_function
 
+import argparse
+import logging.config
+import sys
+import time
+import traceback
+from config import arg, load_config, print_config
+
+from command_handler import CommandHandler
+from detector import Detector
+from event_publisher import EventPublisher
+from usb_handler import UsbHandler
+
+
 """
 Talk to the CosmicPi Arduino DUE accross the serial USB link
 This program has the following functions ...
@@ -25,22 +38,16 @@ julian.lewis lewis.julian@gmail.com 7/Apr/2016
 
 """
 
-import sys
-import time
-import traceback
-import argparse
-import logging.config
-
-from config import load_config, print_config, arg
-from event_publisher import EventPublisher
-from usb_handler import UsbHandler
-from detector import Detector
-from command_handler import CommandHandler
-
 
 def main():
-    main_parser = argparse.ArgumentParser(prog="cosmicpi", description="CosmicPi acquisition process", add_help=False)
-    main_parser.add_argument("--config", help="Path to configuration file", default="/etc/cosmicpi.yaml")
+    main_parser = argparse.ArgumentParser(
+        prog="cosmicpi",
+        description="CosmicPi acquisition process",
+        add_help=False)
+    main_parser.add_argument(
+        "--config",
+        help="Path to configuration file",
+        default="/etc/cosmicpi.yaml")
     args, remaining_argv = main_parser.parse_known_args()
 
     # Merge the default config with the configuration file
@@ -50,19 +57,36 @@ def main():
     parser = argparse.ArgumentParser(parents=[main_parser])
     parser.set_defaults(**config)
 
-    parser.add_argument("-i", "--host",       **arg("broker.host",          "Message broker host"))
-    parser.add_argument("-p", "--port",       **arg("broker.port",          "Message broker port", type=int))
-    parser.add_argument("-a", "--username",   **arg("broker.username",      "Message broker username"))
-    parser.add_argument("-b", "--password",   **arg("broker.password",      "Message broker password"))
-    parser.add_argument("-n", "--no-publish", **arg("broker.enabled",       "Disable event publication"))
-    parser.add_argument("-u", "--usb",        **arg("usb.device",           "USB device name"))
-    parser.add_argument("-d", "--debug",      **arg("debug",                "Enable debug mode"))
-    parser.add_argument("-o", "--log-config", **arg("logging.config",       "Path to logging configuration"))
-    parser.add_argument("-l", "--no-log",     **arg("logging.enabled",      "Disable file logging"))
-    parser.add_argument("-v", "--no-vib",     **arg("monitoring.vibration", "Disable vibration monitoring"))
-    parser.add_argument("-w", "--no-weather", **arg("monitoring.weather",   "Disable weather monitoring"))
-    parser.add_argument("-c", "--no-cosmics", **arg("monitoring.cosmics",   "Disable cosmic ray monitoring"))
-    parser.add_argument("-k", "--patk",       **arg("patok",                "Server push notification token"))
+    parser.add_argument(
+        "-i", "--host", **arg("broker.host", "Message broker host"))
+    parser.add_argument("-p", "--port", **arg("broker.port",
+                                              "Message broker port", type=int))
+    parser.add_argument("-a", "--username", **
+                        arg("broker.username", "Message broker username"))
+    parser.add_argument("-b", "--password", **
+                        arg("broker.password", "Message broker password"))
+    parser.add_argument("-n", "--no-publish", **
+                        arg("broker.enabled", "Disable event publication"))
+    parser.add_argument("-u", "--usb", **arg("usb.device", "USB device name"))
+    parser.add_argument("-d", "--debug", **arg("debug", "Enable debug mode"))
+    parser.add_argument("-o", "--log-config", **
+                        arg("logging.config", "Path to logging configuration"))
+    parser.add_argument("-l", "--no-log", **
+                        arg("logging.enabled", "Disable file logging"))
+    parser.add_argument("-v",
+                        "--no-vib",
+                        **arg("monitoring.vibration",
+                              "Disable vibration monitoring"))
+    parser.add_argument("-w",
+                        "--no-weather",
+                        **arg("monitoring.weather",
+                              "Disable weather monitoring"))
+    parser.add_argument("-c",
+                        "--no-cosmics",
+                        **arg("monitoring.cosmics",
+                              "Disable cosmic ray monitoring"))
+    parser.add_argument("-k", "--patk", **arg("patok",
+                                              "Server push notification token"))
 
     options = parser.parse_args()
 

@@ -19,15 +19,35 @@
 # MA 02111-1307, USA.
 
 
-# TODO: Generate this manifest file by running the following commands:
-#
-#  git init
-#  git add -A
-#  pip install -e .[all]
-#  check-manifest -u
+root = true
 
-# Check manifest will not automatically add these two files:
-include .dockerignore
-include .editorconfig
-include .tx/config
-recursive-include cosmicpi_daq *.po *.pot *.mo
+[*]
+indent_style = space
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+# Python files
+[*.py]
+indent_size = 4
+# isort plugin configuration
+known_first_party = cosmicpi_daq
+multi_line_output = 2
+default_section = THIRDPARTY
+
+# RST files (used by sphinx)
+[*.rst]
+indent_size = 4
+
+# CSS, HTML, JS, JSON, YML
+[*.{css,html,js,json,yml}]
+indent_size = 2
+
+# Matches the exact files either package.json or .travis.yml
+[{package.json,.travis.yml}]
+indent_size = 2
+
+# Dockerfile
+[Dockerfile]
+indent_size = 4

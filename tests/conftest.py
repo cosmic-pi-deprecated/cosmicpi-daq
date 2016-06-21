@@ -19,15 +19,13 @@
 # MA 02111-1307, USA.
 
 
-# TODO: Generate this manifest file by running the following commands:
-#
-#  git init
-#  git add -A
-#  pip install -e .[all]
-#  check-manifest -u
+"""Pytest configuration."""
 
-# Check manifest will not automatically add these two files:
-include .dockerignore
-include .editorconfig
-include .tx/config
-recursive-include cosmicpi_daq *.po *.pot *.mo
+from __future__ import absolute_import, print_function
+
+import pytest
+
+
+# @pytest.fixture()
+# def foo():
+#     """Foo fixture."""
