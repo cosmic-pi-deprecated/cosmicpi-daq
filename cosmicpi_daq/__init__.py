@@ -18,16 +18,16 @@
 # Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA 02111-1307, USA.
 
+"""Data acquisition package for reading data from CosmicPi."""
 
-# TODO: Generate this manifest file by running the following commands:
-#
-#  git init
-#  git add -A
-#  pip install -e .[all]
-#  check-manifest -u
+from __future__ import absolute_import, print_function
 
-# Check manifest will not automatically add these two files:
-include .dockerignore
-include .editorconfig
-include .tx/config
-recursive-include cosmicpi_daq *.po *.pot *.mo
+from .cosmicpi import main
+from .cli import main as cli
+from .version import __version__
+
+__all__ = (
+    'main',
+    'cli',
+    '__version__',
+)

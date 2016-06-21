@@ -19,15 +19,29 @@
 # MA 02111-1307, USA.
 
 
-# TODO: Generate this manifest file by running the following commands:
-#
-#  git init
-#  git add -A
-#  pip install -e .[all]
-#  check-manifest -u
+notifications:
+  email: false
 
-# Check manifest will not automatically add these two files:
-include .dockerignore
-include .editorconfig
-include .tx/config
-recursive-include cosmicpi_daq *.po *.pot *.mo
+sudo: false
+
+language: python
+
+cache:
+  - pip
+
+python:
+  - "2.7"
+  - "3.5"
+
+before_install:
+  - "travis_retry pip install --upgrade pip setuptools py"
+  - "travis_retry pip install twine wheel coveralls"
+
+install:
+  - "travis_retry pip install -e .[all]"
+
+script:
+  - "./run-tests.sh"
+
+after_success:
+  - coveralls

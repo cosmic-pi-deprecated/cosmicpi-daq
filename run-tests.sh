@@ -1,3 +1,4 @@
+#!/usr/bin/env sh
 # -*- coding: utf-8 -*-
 #
 # This file is part of CosmicPi-DAQ.
@@ -19,15 +20,9 @@
 # MA 02111-1307, USA.
 
 
-# TODO: Generate this manifest file by running the following commands:
-#
-#  git init
-#  git add -A
-#  pip install -e .[all]
-#  check-manifest -u
-
-# Check manifest will not automatically add these two files:
-include .dockerignore
-include .editorconfig
-include .tx/config
-recursive-include cosmicpi_daq *.po *.pot *.mo
+pydocstyle cosmicpi_daq && \
+isort -rc -c -df **/*.py && \
+check-manifest --ignore ".travis-*" && \
+sphinx-build -qnNW docs docs/_build/html && \
+python setup.py test && \
+sphinx-build -qnNW -b doctest docs docs/_build/doctest

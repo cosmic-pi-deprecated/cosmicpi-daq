@@ -1,8 +1,8 @@
 import json
 import logging
-import netifaces
 import threading
 
+import netifaces
 from event import Event
 
 logfile = logging.getLogger('file')
@@ -10,16 +10,33 @@ log = logging.getLogger(__name__)
 
 
 class Sensors(object):
+
     def __init__(self):
-        self.temperature   = {"temperature": "0.0", "humidity": "0.0"}
-        self.barometer     = {"temperature": "0.0", "pressure": "0.0", "altitude": "0.0"}
-        self.vibration     = {"direction": "0", "count": "0"}
-        self.magnetometer  = {"x": "0.0", "y": "0.0", "z": "0.0"}
+        self.temperature = {"temperature": "0.0", "humidity": "0.0"}
+        self.barometer = {
+            "temperature": "0.0",
+            "pressure": "0.0",
+            "altitude": "0.0"}
+        self.vibration = {"direction": "0", "count": "0"}
+        self.magnetometer = {"x": "0.0", "y": "0.0", "z": "0.0"}
         self.accelerometer = {"x": "0.0", "y": "0.0", "z": "0.0"}
-        self.location      = {"latitude": "0.0", "longitude": "0.0", "altitude": "0.0"}
-        self.timing        = {"uptime": "0", "counter_frequency": "0", "time_string": "0"}
-        self.status        = {"queue_size": "0", "missed_events": "0", "buffer_error": "0", "temp_status": "0",
-                              "baro_status": "0", "accel_status": "0", "mag_status": "0", "gps_status": "0"}
+        self.location = {
+            "latitude": "0.0",
+            "longitude": "0.0",
+            "altitude": "0.0"}
+        self.timing = {
+            "uptime": "0",
+            "counter_frequency": "0",
+            "time_string": "0"}
+        self.status = {
+            "queue_size": "0",
+            "missed_events": "0",
+            "buffer_error": "0",
+            "temp_status": "0",
+            "baro_status": "0",
+            "accel_status": "0",
+            "mag_status": "0",
+            "gps_status": "0"}
 
     def update(self, line):
         line = line.replace('\n', '')
@@ -72,21 +89,30 @@ class Detector(object):
                 continue
 
             if self.options.monitoring['vibration'] and 'vibration' in sensor:
-                evt = Event(self.detector_id, self.get_next_sequence(), self.sensors)
+                evt = Event(
+                    self.detector_id,
+                    self.get_next_sequence(),
+                    self.sensors)
                 self.vbrts += 1
                 log.info("Vibration event: %s" % evt)
                 self.handle_event(evt)
                 continue
 
             if self.options.monitoring['weather'] and 'temperature' in sensor:
-                evt = Event(self.detector_id, self.get_next_sequence(), self.sensors)
+                evt = Event(
+                    self.detector_id,
+                    self.get_next_sequence(),
+                    self.sensors)
                 self.weathers += 1
                 log.info("Weather event: %s" % evt)
                 self.handle_event(evt)
                 continue
 
             if self.options.monitoring['cosmics'] and 'event' in sensor:
-                evt = Event(self.detector_id, self.get_next_sequence(), self.sensors)
+                evt = Event(
+                    self.detector_id,
+                    self.get_next_sequence(),
+                    self.sensors)
                 self.events += 1
                 log.info("Cosmic event: %s" % evt)
                 self.handle_event(evt)
@@ -94,12 +120,13 @@ class Detector(object):
 
             if self.options.debug:
                 log.debug(sensor)
-
             # else:
-            #     ts = time.strftime("%d/%b/%Y %H:%M:%S", time.gmtime(time.time()))
+            #     ts = time.strftime("%d/%b/%Y %H:%M:%S",
+            #                        time.gmtime(time.time()))
             #     tim = evt.timing
             #     sts = evt.status
-            #     s = "cosmic_pi:uptime:%s :queue_size:%s time_string:[%s] %s    \r" % (
+            #     s = "cosmic_pi:uptime:%s :queue_size:%s "
+            #          "time_string:[%s] %s    \r" % (
             #     tim["uptime"], sts["queue_size"], ts, tim["time_string"])
             #     sys.stdout.write(s)
             #     sys.stdout.flush()
@@ -124,6 +151,7 @@ class Detector(object):
 
         for interface in known_interfaces:
             if interface in netifaces.interfaces():
-                return netifaces.ifaddresses(interface)[netifaces.AF_LINK][0]['addr']
+                return netifaces.ifaddresses(
+                    interface)[netifaces.AF_LINK][0]['addr']
 
         raise Exception("No detector ID could be determined")

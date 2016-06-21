@@ -19,15 +19,12 @@
 # MA 02111-1307, USA.
 
 
-# TODO: Generate this manifest file by running the following commands:
-#
-#  git init
-#  git add -A
-#  pip install -e .[all]
-#  check-manifest -u
+"""Module tests."""
 
-# Check manifest will not automatically add these two files:
-include .dockerignore
-include .editorconfig
-include .tx/config
-recursive-include cosmicpi_daq *.po *.pot *.mo
+from __future__ import absolute_import, print_function
+
+
+def test_version():
+    """Test version import."""
+    from cosmicpi_daq import __version__
+    assert __version__

@@ -1,6 +1,29 @@
+# -*- coding: utf-8 -*-
+#
+# This file is part of CosmicPi-DAQ.
+# Copyright (C) 2016 Justin Lewis Salmon.
+#
+# CosmicPi-DAQ is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# CosmicPi-DAQ is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with CosmicPi-DAQ; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA 02111-1307, USA.
+
+"""Data acquisition package for reading data from CosmicPi."""
+
 import argparse
 import logging
 import os
+
 import yaml
 
 log = logging.getLogger(__name__)
@@ -27,7 +50,8 @@ def get_default_config():
             vibration=True
         ),
         logging=dict(
-            config=os.path.dirname(os.path.realpath(__file__)) + "/logging.conf",
+            config=os.path.dirname(
+                os.path.realpath(__file__)) + "/logging.conf",
             enabled=True
         ),
         usb=dict(
@@ -55,7 +79,8 @@ def load_config(path):
         try:
             with open(path, "r") as f:
                 config_file = yaml.safe_load(f)
-                config = merge_config(config, config_file if config_file else {})
+                config = merge_config(
+                    config, config_file if config_file else {})
         except Exception as e:
             print ("WARN: invalid configuration file at %s: %s" % (path, e))
 
@@ -70,7 +95,8 @@ def merge_config(default, override, prefix=None):
 
         prefixed_key = "%s.%s" % (prefix, k) if prefix else k
         if isinstance(v, dict):
-            result[k] = merge_config(v, override[k] if k in override else dict(), prefixed_key)
+            result[k] = merge_config(
+                v, override[k] if k in override else dict(), prefixed_key)
         else:
             if k in override:
                 result[k] = override[k]
@@ -82,7 +108,11 @@ def arg(dest, help, type=None):
     """Utility function to shorten the argument definitions and deal with
     nested config destinations.
     """
-    action = dict(dest=dest, help=help, action=CustomAction, default=argparse.SUPPRESS)
+    action = dict(
+        dest=dest,
+        help=help,
+        action=CustomAction,
+        default=argparse.SUPPRESS)
     if 'Disable' in help or 'Enable' in help:
         action.update(const=False if 'Disable' in help else True, nargs=0)
     else:
@@ -92,8 +122,10 @@ def arg(dest, help, type=None):
 
 def print_config(config):
     """Pretty print the given configuration"""
-    log.debug('options: \n' + yaml.dump(config.__dict__, explicit_start=True, explicit_end=True,
-                                        default_flow_style=False))
+    log.debug('options: \n' + yaml.dump(
+        config.__dict__, explicit_start=True, explicit_end=True,
+        default_flow_style=False
+    ))
 
 
 class CustomAction(argparse.Action):
@@ -102,6 +134,7 @@ class CustomAction(argparse.Action):
 
     e.g.: parser.add_argument(..., dest="logging.config", action=GroupedAction)
     """
+
     def __call__(self, parser, namespace, values, option_string=None):
         if self.const is not None:
             self.set_value(namespace, self.const)

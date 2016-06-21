@@ -18,16 +18,12 @@
 # Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA 02111-1307, USA.
 
+"""Version information for CosmicPi-DAQ.
 
-# TODO: Generate this manifest file by running the following commands:
-#
-#  git init
-#  git add -A
-#  pip install -e .[all]
-#  check-manifest -u
+This file is imported by ``cosmicpi_daq.__init__``,
+and parsed by ``setup.py``.
+"""
 
-# Check manifest will not automatically add these two files:
-include .dockerignore
-include .editorconfig
-include .tx/config
-recursive-include cosmicpi_daq *.po *.pot *.mo
+from __future__ import absolute_import, print_function
+
+__version__ = "0.0.1.dev20160621"

@@ -3,12 +3,12 @@
 import logging
 import socket
 import sys
-
 import time
+
+from blessings import Terminal
 from cliff.app import App
 from cliff.command import Command
 from cliff.commandmanager import CommandManager
-from blessings import Terminal
 
 
 class SocketCommand(object):
@@ -31,6 +31,7 @@ class SocketCommand(object):
 
 class UsbToggle(Command, SocketCommand):
     """Toggle the USB ebabled/disabled state."""
+
     def take_action(self, args):
         self.app.stdout.write(self.send_and_receive('u') + '\n')
 
@@ -41,7 +42,9 @@ class Arduino(Command, SocketCommand):
     def get_parser(self, prog_name):
         parser = super(Arduino, self).get_parser(prog_name)
 
-        subparsers = parser.add_subparsers(dest='arduino_command', help='available arduino commands')
+        subparsers = parser.add_subparsers(
+            dest='arduino_command',
+            help='available arduino commands')
 
         subparsers.add_parser('HTUX', help='reset the HTH chip')
         subparsers.add_parser('HTUD', help='HTU Temperature-Humidity display rate') \
@@ -66,8 +69,11 @@ class Arduino(Command, SocketCommand):
         return parser
 
     def take_action(self, args):
-        command = args.arduino_command + (' ' + str(args.value) if hasattr(args, 'value') else '')
-        self.app.stdout.write(self.send_and_receive('arduino ' + command) + '\n')
+        command = args.arduino_command + \
+            (' ' + str(args.value) if hasattr(args, 'value') else '')
+        self.app.stdout.write(
+            self.send_and_receive(
+                'arduino ' + command) + '\n')
 
 
 class Status(Command, SocketCommand):
@@ -87,7 +93,8 @@ class Status(Command, SocketCommand):
                 try:
                     status = self.get_status()
                     self.app.stdout.write(status)
-                    self.app.stdout.write(term.move_y(term.height - len(status.split('\n'))))
+                    self.app.stdout.write(term.move_y(
+                        term.height - len(status.split('\n'))))
                     time.sleep(1)
                 except KeyboardInterrupt:
                     self.app.stdout.write(term.move_y(term.height) + '\n')
